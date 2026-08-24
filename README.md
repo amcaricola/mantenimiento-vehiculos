@@ -1,21 +1,40 @@
 # 🚚 Sistema de Mantenimiento de Vehículos
 
 Aplicación web interna, **Mobile-First**, para el seguimiento técnico y legal de
-vehículos: seguro, permiso de circulación, revisión técnica, revisión de gas,
-pastillas de freno y kilometraje. Incluye semáforos de alerta, cálculo de días
-restantes y respaldo fotográfico por revisión.
+los vehículos de una empresa. Permite a los operarios verificar desde el móvil
+el estado de las revisiones —seguro, permiso de circulación, revisión técnica,
+revisión de gas, pastillas de freno y kilometraje— con cálculo automático de los
+días restantes, semáforos de alerta y respaldo fotográfico por revisión.
+
+---
+
+## ✨ Características
+
+- **Modo Revisión (público):** lista de vehículos con semáforos de estado
+  (🔴 vencido · 🟡 próximo · 🟢 al día · ⚪ sin fecha), días restantes e icono de
+  foto por revisión (azul si hay respaldo, gris si no) con visor a pantalla completa.
+- **Modo Edición (protegido):** acceso con clave maestra y sesión de **24 horas**
+  (token en `localStorage`). Permite crear, editar y eliminar vehículos, actualizar
+  fechas y kilometraje, y adjuntar **1 foto de respaldo por revisión**.
+- **Items de revisión fijos:** los 6 tipos de revisión son subtítulos fijos; el
+  usuario solo actualiza sus fechas/km/observaciones y foto.
+- **Margen de aviso fijo** de 15 días (constante `DIAS_MARGEN_AVISO`).
+- **Mobile-First:** pensado para pantallas de 360–430 px, con captura directa de
+  cámara (`capture="environment"`).
 
 ---
 
 ## 🛠 Stack
 
-- **Backend:** Node.js + Hono (`@hono/node-server`)
-- **Frontend:** Preact + Tailwind CSS + Vite
-- **Persistencia:** JSON flat-file (`data/db.json`) con patrón Repositorio (migrable)
-- **Fotos:** Directorio local (`uploads/`), 1 imagen por revisión
-- **Auth:** Clave maestra (`.env`) + token JWT de sesión de 24 h en `localStorage`
-- **Testing:** Vitest
-- **Despliegue:** Node.js estándar con `npm start`
+| Capa | Tecnología |
+| :--- | :--- |
+| **Backend** | Node.js + Hono (`@hono/node-server`) |
+| **Frontend** | Preact + Tailwind CSS + Vite |
+| **Persistencia** | JSON flat-file (`data/db.json`) con patrón Repositorio |
+| **Fotos** | Directorio local (`uploads/`), 1 imagen por revisión |
+| **Auth** | Clave maestra (`.env`) + token JWT de sesión 24 h |
+| **Testing** | Vitest |
+| **Despliegue** | Node.js estándar (`npm run build` + `npm start`) |
 
 ---
 
@@ -33,8 +52,8 @@ Copia `.env.example` a `.env` y ajusta los valores:
 | `UPLOADS_DIR` | Carpeta de fotos de respaldo | `./uploads` |
 | `PUBLIC_DIR` | Carpeta del frontend compilado | `./dist` |
 
-> ⚠️ **Seguridad:** `MASTER_KEY` nunca viaja al frontend. Solo se valida en el
-> servidor para emitir el token de sesión.
+> ⚠️ **Seguridad:** `MASTER_KEY` y `JWT_SECRET` nunca viajan al frontend. La clave
+> maestra solo se valida en el servidor para emitir el token de sesión.
 
 ---
 
@@ -60,37 +79,98 @@ curl http://localhost:3000/api/health
 
 ---
 
-## 🚀 Despliegue (`npm start`)
+## 📦 Despliegue (`npm start`)
 
 El despliegue es **solo con Node.js estándar**:
 
 ```bash
-npm install --omit=dev   # o simplemente: npm ci
-npm run build            # compila frontend + backend en /dist
-npm start                # sirve la app completa en :3000
+npm ci
+npm run build   # compila el frontend (Vite → dist/) y el backend (esbuild → dist/server/)
+npm start       # sirve la app completa (API + estáticos) en :3000
 ```
 
-Los datos y fotos persisten en carpetas locales (`data/` y `uploads/`), que se
-crean automáticamente en el primer arranque. Montar esas carpetas en el volumen
-del servidor garantiza que la información no se pierda al reiniciar o actualizar.
+Los datos y las fotos persisten en carpetas locales (`data/` y `uploads/`), que se
+crean automáticamente en el primer arranque. Montar esas carpetas como volumen del
+servidor garantiza que la información no se pierda al reiniciar o actualizar.
 
 ---
 
 ## 🔐 Modos de uso
 
-- **Modo Revisión (público):** cualquier usuario ve los vehículos, días restantes,
-  semáforos y fotos de respaldo.
-- **Modo Edición (protegido):** solicita la clave maestra. Con sesión de 24 h se
-  puede crear, editar, eliminar vehículos y subir/quitar 1 foto por revisión.
+- **Modo Revisión (público):** cualquier usuario ve los vehículos, los días
+  restantes, los semáforos y las fotos de respaldo (información pública).
+- **Modo Edición (protegido):** solicita la clave maestra. Con la sesión de 24 h
+  se pueden crear, editar y eliminar vehículos, actualizar la fecha de la última
+  revisión general, las fechas de las próximas revisiones, el kilometraje y
+  subir/quitar la foto de cada revisión.
+
+---
+
+## 🗃 Modelo de datos
+
+Los **6 items de revisión son fijos** y siempre están presentes en cada vehículo:
+
+1. Seguro Obligatorio (SOAP)
+2. Permiso de Circulación
+3. Revisión Técnica
+4. Revisión de Gas
+5. Pastillas de Freno
+6. Kilometraje
+
+```typescript
+interface ItemRevision {
+  id: string
+  tipo: TipoRevision
+  nombre: string
+  fechaProximaRevision?: string      // ISO YYYY-MM-DD
+  kilometrajeActual?: number         // solo en el item 'kilometraje'
+  kilometrajeProximo?: number        // solo en el item 'kilometraje'
+  imagenRespaldoUrl?: string | null
+  observaciones?: string
+}
+
+interface Vehiculo {
+  id: string
+  patente: string
+  marca: string
+  modelo: string
+  tipo: string
+  fechaUltimaRevision?: string       // última revisión general del vehículo
+  revisiones: ItemRevision[]
+  createdAt: string
+  updatedAt: string
+}
+```
+
+El margen de aviso es fijo: `DIAS_MARGEN_AVISO = 15`.
+
+---
+
+## 🔌 API
+
+| Método | Ruta | Acceso | Descripción |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | Público | Valida `{ masterKey }` y emite token 24 h |
+| `GET` | `/api/auth/verify` | Público | Verifica si un token sigue activo |
+| `GET` | `/api/vehicles` | Público | Lista vehículos con estados calculados |
+| `GET` | `/api/vehicles/:id` | Público | Detalle de un vehículo |
+| `POST` | `/api/vehicles` | 🔒 Token | Crear vehículo |
+| `PUT` | `/api/vehicles/:id` | 🔒 Token | Actualizar vehículo y sus revisiones |
+| `DELETE` | `/api/vehicles/:id` | 🔒 Token | Eliminar vehículo |
+| `POST` | `/api/vehicles/:id/revision/:revId/image` | 🔒 Token | Subir foto de respaldo |
+| `DELETE` | `/api/vehicles/:id/revision/:revId/image` | 🔒 Token | Eliminar foto de respaldo |
+| `GET` | `/api/health` | Público | Estado del servidor |
+
+Toda mutación requiere `Authorization: Bearer <token>`.
 
 ---
 
 ## 🧪 Tests
 
 ```bash
-npm test          # ejecuta la suite de Vitest
-npm run test:watch
-npm run typecheck # chequeo de tipos TypeScript
+npm test            # ejecuta la suite de Vitest
+npm run test:watch  # modo watch
+npm run typecheck   # chequeo de tipos TypeScript
 ```
 
 La suite cubre: cálculo de días restantes y estados, repositorio JSON,
@@ -99,14 +179,33 @@ imágenes.
 
 ---
 
-## 📂 Estructura
+## 📂 Estructura del proyecto
 
 ```text
-src/
-├── backend/          # Servidor Hono (config, middleware, modules, storage)
-├── frontend/         # SPA Preact + Tailwind (components, hooks, pages, services, utils)
-└── shared/           # Tipos y lógica de fechas compartidos
-data/                 # Base de datos JSON (persistencia local)
-uploads/              # Fotos de respaldo (persistencia local)
-tests/                # Suite de Vitest
+mantenimiento-vehiculos/
+├── data/                        # Base de datos JSON (persistencia local)
+├── uploads/                     # Fotos de respaldo (persistencia local)
+├── scripts/
+│   └── build.mjs                # Build de producción (Vite + esbuild)
+├── src/
+│   ├── backend/                 # Servidor Hono
+│   │   ├── config/              # Variables de entorno
+│   │   ├── middleware/          # Auth, errores, estáticos
+│   │   ├── modules/             # auth, vehicles, upload
+│   │   ├── storage/             # Repositorio JSON (patrón Repositorio)
+│   │   ├── app.ts               # Configuración de la aplicación Hono
+│   │   └── server.ts            # Punto de entrada
+│   ├── frontend/                # SPA Preact + Tailwind
+│   │   ├── src/
+│   │   │   ├── components/      # UI (cards, tablas, modales, badges…)
+│   │   │   ├── hooks/           # useAuth, useVehicles
+│   │   │   ├── pages/           # PublicDashboard, AdminDashboard
+│   │   │   ├── services/        # Cliente HTTP (api.ts)
+│   │   │   └── utils/           # dateUtils
+│   │   └── vite.config.ts
+│   └── shared/                  # Tipos y lógica de fechas compartidos
+├── tests/                       # Suite de Vitest
+├── .env.example
+├── package.json
+└── tsconfig.json
 ```
