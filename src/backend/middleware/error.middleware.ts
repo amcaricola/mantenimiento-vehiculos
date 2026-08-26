@@ -13,6 +13,7 @@ export class ApiError extends Error {
 
 export const errorHandler: ErrorHandler = (err, c) => {
   if (err instanceof ApiError) {
+    console.warn(`[ApiError] ${c.req.method} ${c.req.url}: ${err.status} - ${err.message}`)
     return c.json(
       { error: err.message },
       err.status as ContentfulStatusCode,

@@ -2,18 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { ApiError } from '../../middleware/error.middleware.js'
-
-const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'image/heic',
-  'image/heif',
-  'image/bmp',
-]
-
-const MAX_FILE_BYTES = 8 * 1024 * 1024
+import { validateImageFile } from './validation.js'
 
 export interface UploadServiceContract {
   save(file: File): Promise<string>
@@ -40,17 +29,8 @@ export class UploadService implements UploadServiceContract {
     await fs.mkdir(this.dir, { recursive: true })
   }
 
-  private validate(file: File): void {
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      throw new ApiError(400, `Tipo de archivo no permitido: ${file.type || 'desconocido'}`)
-    }
-    if (file.size > MAX_FILE_BYTES) {
-      throw new ApiError(400, 'El archivo supera el tamaño máximo de 8 MB')
-    }
-  }
-
   async save(file: File): Promise<string> {
-    this.validate(file)
+    validateImageFile(file)
     await this.ensureDir()
     const ext = path.extname(file.name).toLowerCase() || '.jpg'
     const filename = `${crypto.randomUUID()}${ext}`

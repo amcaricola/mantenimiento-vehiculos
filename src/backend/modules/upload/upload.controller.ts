@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { AppContext } from '../../app.types.js'
 import { ApiError } from '../../middleware/error.middleware.js'
 import { authMiddleware } from '../../middleware/auth.middleware.js'
+import { isFileLike } from './validation.js'
 
 export function createUploadController() {
   const app = new Hono<AppContext>()
@@ -9,11 +10,12 @@ export function createUploadController() {
   app.post('/:vehicleId/revision/:revisionId/image', authMiddleware(), async (c) => {
     const { vehicleId, revisionId } = c.req.param()
     const body = await c.req.parseBody()
-    const file = body['image']
+    const candidate = body['image']
 
-    if (!(file instanceof File)) {
+    if (!isFileLike(candidate)) {
       throw new ApiError(400, 'Archivo de imagen requerido (campo "image")')
     }
+    const file = candidate
 
     const vehicleService = c.get('vehicleService')
     const existingUrl = await vehicleService.getImageUrl(vehicleId, revisionId)
