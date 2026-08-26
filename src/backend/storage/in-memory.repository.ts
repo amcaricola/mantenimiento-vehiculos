@@ -1,6 +1,6 @@
-import type { Vehiculo } from '../../shared/types'
-import type { Storage } from './storage.interface'
-import { seedVehiculos } from './seed'
+import type { Vehiculo } from '../../shared/types.js'
+import type { Storage } from './storage.interface.js'
+import { seedVehiculos } from './seed.js'
 
 export class InMemoryRepository implements Storage {
   private vehiculos: Vehiculo[] = seedVehiculos()
