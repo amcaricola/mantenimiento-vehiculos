@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks'
 import type { ItemRevision, TipoRevision, Vehiculo, VehiculoConEstado } from '../../../shared/types.js'
 import { NOMBRES_REVISION, TIPOS_REVISION } from '../../../shared/types.js'
+import { processImageFile } from '../utils/image.js'
 
 interface RevisionDraft extends Omit<ItemRevision, 'id'> {
   key: string
@@ -64,8 +65,13 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
   )
 
   const [pendingFiles, setPendingFiles] = useState<Record<string, File>>({})
+  const [processingFiles, setProcessingFiles] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [phase, setPhase] = useState<'saving' | 'uploading' | null>(null)
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(
+    null,
+  )
 
   function updateRevision(key: string, patch: Partial<RevisionDraft>) {
     setRevisiones((prev) =>
@@ -82,20 +88,37 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
       setError('El archivo seleccionado no es una imagen')
       return
     }
-    setPendingFiles((prev) => ({ ...prev, [key]: file }))
+    setProcessingFiles((prev) => ({ ...prev, [key]: true }))
     setError(null)
+    try {
+      const processed = await processImageFile(file)
+      setPendingFiles((prev) => ({ ...prev, [key]: processed }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar la foto')
+    } finally {
+      setProcessingFiles((prev) => ({ ...prev, [key]: false }))
+    }
   }
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
     setSubmitting(true)
+    setPhase('saving')
+    setUploadProgress(null)
     setError(null)
     try {
       const data = buildPayload()
       const saved = await onSave(data)
       const savedIds = saved.revisiones.map((r) => r.id)
+      const pending = Object.entries(pendingFiles)
+
+      if (pending.length > 0) {
+        setPhase('uploading')
+        setUploadProgress({ current: 0, total: pending.length })
+      }
+
       const uploadErrors: string[] = []
-      for (const [key, file] of Object.entries(pendingFiles)) {
+      for (const [key, file] of pending) {
         const index = revisiones.findIndex((r) => r.key === key)
         const revisionId = savedIds[index]
         if (revisionId) {
@@ -105,6 +128,7 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
             uploadErrors.push(err instanceof Error ? err.message : 'Error al subir la foto')
           }
         }
+        setUploadProgress((p) => (p ? { ...p, current: p.current + 1 } : p))
       }
       if (uploadErrors.length > 0) {
         throw new Error(`Los datos se guardaron, pero hubo error al subir foto(s): ${uploadErrors.join('; ')}`)
@@ -114,6 +138,8 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
       setError(err instanceof Error ? err.message : 'Error al guardar')
     } finally {
       setSubmitting(false)
+      setPhase(null)
+      setUploadProgress(null)
     }
   }
 
@@ -241,20 +267,31 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
                 </div>
 
                 <div className="mt-3 flex items-center gap-3 rounded-xl bg-slate-50 p-2">
-                  {rev.imagenRespaldoUrl ? (
+                  {processingFiles[rev.key] ? (
+                    <div className="flex-1 py-1">
+                      <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200">
+                        <div
+                          className="h-full w-1/3 rounded-full bg-brand-600"
+                          style={{ animation: 'indeterminate-bar 1.2s ease-in-out infinite' }}
+                        />
+                      </div>
+                      <p className="mt-1.5 text-xs text-slate-500">Cargando foto…</p>
+                    </div>
+                  ) : pendingFiles[rev.key] ? (
+                    <>
+                      <span className="min-w-0 flex-1 truncate text-xs">
+                        <span className="font-semibold text-emerald-600">✓ Cargada</span>
+                        <span className="text-slate-500"> · {pendingFiles[rev.key].name}</span>
+                      </span>
+                      <button type="button" className="btn-outline !min-h-[40px] !px-3 !text-xs" onClick={() => setPendingFiles((p) => { const c = { ...p }; delete c[rev.key]; return c })}>
+                        Quitar
+                      </button>
+                    </>
+                  ) : rev.imagenRespaldoUrl ? (
                     <>
                       <img src={rev.imagenRespaldoUrl} alt={`Respaldo ${rev.nombre}`} className="h-14 w-14 rounded-lg object-cover" />
                       <button type="button" className="btn-outline !min-h-[40px] !px-3 !text-xs" onClick={() => handleRemoveImage(rev)}>
                         Quitar foto
-                      </button>
-                    </>
-                  ) : pendingFiles[rev.key] ? (
-                    <>
-                      <span className="text-xs font-medium text-slate-600">
-                        📎 {pendingFiles[rev.key].name} (se subirá al guardar)
-                      </span>
-                      <button type="button" className="btn-outline !min-h-[40px] !px-3 !text-xs" onClick={() => setPendingFiles((p) => { const c = { ...p }; delete c[rev.key]; return c })}>
-                        Quitar
                       </button>
                     </>
                   ) : (
@@ -285,6 +322,27 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
         </div>
 
         <div className="border-t border-slate-200 bg-white p-4">
+          {submitting && (
+            <div className="mb-3">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-brand-600 transition-all duration-300"
+                  style={
+                    phase === 'uploading' && uploadProgress
+                      ? {
+                          width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                        }
+                      : { width: '40%', animation: 'indeterminate-bar 1.2s ease-in-out infinite' }
+                  }
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-slate-500">
+                {phase === 'uploading' && uploadProgress
+                  ? `Subiendo foto ${Math.min(uploadProgress.current + 1, uploadProgress.total)} de ${uploadProgress.total}…`
+                  : 'Guardando datos…'}
+              </p>
+            </div>
+          )}
           <button type="submit" className="btn-primary w-full" disabled={submitting}>
             {submitting ? 'Guardando…' : isNew ? 'Crear vehículo' : 'Guardar cambios'}
           </button>

@@ -31,3 +31,12 @@
     @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500;
   }
 }
+
+@keyframes indeterminate-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}

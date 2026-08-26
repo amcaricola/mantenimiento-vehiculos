@@ -21,31 +21,43 @@ async function request<T>(
   path: string,
   options: RequestInit = {},
   token?: string | null,
+  timeoutMs = 60000,
 ): Promise<T> {
-  const headers = new Headers(options.headers)
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`)
-  }
-  const res = await fetch(path, { ...options, headers })
-
-  if (!res.ok) {
-    let message = `Error ${res.status}`
-    try {
-      const data = await res.json()
-      if (data?.error) message = data.error
-    } catch {
-      // sin cuerpo JSON
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const headers = new Headers(options.headers)
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`)
     }
-    if (res.status === 401) {
-      throw new UnauthorizedError(message)
-    }
-    throw new ApiError(message, res.status)
-  }
+    const res = await fetch(path, { ...options, headers, signal: controller.signal })
 
-  if (res.status === 204) {
-    return undefined as T
+    if (!res.ok) {
+      let message = `Error ${res.status}`
+      try {
+        const data = await res.json()
+        if (data?.error) message = data.error
+      } catch {
+        // sin cuerpo JSON
+      }
+      if (res.status === 401) {
+        throw new UnauthorizedError(message)
+      }
+      throw new ApiError(message, res.status)
+    }
+
+    if (res.status === 204) {
+      return undefined as T
+    }
+    return (await res.json()) as T
+  } catch (err) {
+    if ((err as Error)?.name === 'AbortError') {
+      throw new ApiError('La solicitud tardó demasiado. Reintenta.', 0)
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
   }
-  return (await res.json()) as T
 }
 
 export interface LoginResult {
@@ -117,6 +129,7 @@ export const api = {
       `/api/vehicles/${vehicleId}/revision/${revisionId}/image`,
       { method: 'POST', body: form },
       token,
+      120000,
     )
   },
 
