@@ -20,6 +20,19 @@ export interface UploadServiceContract {
   removeByUrl(url: string): Promise<void>
 }
 
+export class UnconfiguredUploadService implements UploadServiceContract {
+  async save(_file: File): Promise<string> {
+    throw new ApiError(
+      503,
+      'Almacenamiento no configurado: conecta un Vercel Blob Store para subir fotos.',
+    )
+  }
+
+  async removeByUrl(_url: string): Promise<void> {
+    // No hay nada que eliminar
+  }
+}
+
 export class UploadService implements UploadServiceContract {
   constructor(private readonly dir: string) {}
 

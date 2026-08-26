@@ -102,9 +102,10 @@ El proyecto está preparado para **Vercel** con el **Framework Preset: Hono**:
 1. Importa el repositorio en Vercel (o usa `vercel` CLI).
 2. En **Project Settings > Framework Preset** selecciona **Hono** (ya forzado por
    `vercel.json`). El build usa `npm run build:vercel`, que compila el frontend
-   dentro de `public/` (servido por la CDN de Vercel).
-3. Crea un **Blob Store** en **Storage** de tu proyecto Vercel. Vercel inyecta
-   automáticamente `BLOB_READ_WRITE_TOKEN` (no hace falta copiarlo).
+   como un único HTML autocontenido.
+3. **Conecta un Vercel Blob Store** (Project > Storage > Blob). Vercel inyecta
+   automáticamente `BLOB_READ_WRITE_TOKEN`; sin él la app funciona con datos
+   **en memoria** (no persistentes) y las fotos no se pueden subir.
 4. Define `MASTER_KEY` y `JWT_SECRET` en las variables de entorno del proyecto.
 
 ### Cómo funciona

@@ -6,12 +6,17 @@ import { loadEnv } from './config/env.js'
 import type { Storage } from './storage/storage.interface.js'
 import { JsonDbRepository } from './storage/json-db.repository.js'
 import { VercelBlobRepository } from './storage/vercel-blob.repository.js'
+import { InMemoryRepository } from './storage/in-memory.repository.js'
 import { createAuthService } from './modules/auth/auth.service.js'
 import { getJwtExpirationSeconds } from './config/env.js'
 import { createAuthController } from './modules/auth/auth.controller.js'
 import { VehicleService } from './modules/vehicles/vehicle.service.js'
 import { createVehicleController } from './modules/vehicles/vehicle.controller.js'
-import { UploadService, type UploadServiceContract } from './modules/upload/upload.service.js'
+import {
+  UploadService,
+  UnconfiguredUploadService,
+  type UploadServiceContract,
+} from './modules/upload/upload.service.js'
 import { VercelBlobUploadService } from './modules/upload/vercel-blob.upload.service.js'
 import { createUploadController } from './modules/upload/upload.controller.js'
 import { errorHandler } from './middleware/error.middleware.js'
@@ -19,6 +24,12 @@ import { createStaticHandler } from './middleware/static.middleware.js'
 
 export function isVercel(): boolean {
   return process.env.VERCEL === '1'
+}
+
+export function hasVercelBlob(): boolean {
+  return Boolean(
+    process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID,
+  )
 }
 
 export interface AppDeps {
@@ -35,17 +46,28 @@ export interface AppBundle {
 
 export function createApp(env: Env = loadEnv(), deps: AppDeps = {}): AppBundle {
   const runningOnVercel = isVercel()
+  const blobConfigured = hasVercelBlob()
+
+  if (runningOnVercel && !blobConfigured) {
+    console.warn(
+      '[app] Vercel sin BLOB_READ_WRITE_TOKEN: usando almacenamiento en memoria (sin persistencia). Conecta un Vercel Blob Store en Storage > Blob.',
+    )
+  }
 
   const repository =
     deps.repository ??
     (runningOnVercel
-      ? new VercelBlobRepository()
+      ? blobConfigured
+        ? new VercelBlobRepository()
+        : new InMemoryRepository()
       : new JsonDbRepository(path.join(env.DATA_DIR, 'db.json')))
 
   const uploadService =
     deps.uploadService ??
     (runningOnVercel
-      ? new VercelBlobUploadService()
+      ? blobConfigured
+        ? new VercelBlobUploadService()
+        : new UnconfiguredUploadService()
       : new UploadService(env.UPLOADS_DIR))
 
   const authService = createAuthService(
