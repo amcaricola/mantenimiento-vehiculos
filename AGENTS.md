@@ -33,7 +33,7 @@ Permite a los usuarios y operarios verificar rápidamente el estado de las revis
 | **Base de Datos** | **Flat-File JSON (`data/db.json`)** | Acceder **únicamente** a través del patrón Repositorio (`JsonDbRepository`). No hacer manipulaciones directas de `fs` fuera de la capa de almacenamiento. |
 | **Almacenamiento de Fotos** | **Directorio Local (`uploads/`)** | Guardar archivos con nombres únicos (ej: UUID + extensión). Máximo 1 foto por revisión de vehículo. |
 | **Testing** | **Vitest** | Todo nuevo módulo o refactor debe incluir pruebas unitarias o de integración. |
-| **Despliegue** | **Node.js estándar (`npm start`)** | Despliegue principal con `npm run build` + `npm start`. También compatible con **Vercel** (preset Hono, entry `src/index.ts`, estáticos en `public/` y persistencia con Vercel Blob al detectar `process.env.VERCEL`). Los directorios `data/` y `uploads/` son carpetas locales persistentes. |
+| **Despliegue** | **Node.js estándar (`npm start`)** | Despliegue principal con `npm run build` + `npm start`. También compatible con **Vercel** (preset Hono, entry `src/index.ts`, SPA autocontenida servida por la función con `vite-plugin-singlefile` y persistencia con Vercel Blob al detectar `process.env.VERCEL`). Los directorios `data/` y `uploads/` son carpetas locales persistentes. |
 
 ---
 

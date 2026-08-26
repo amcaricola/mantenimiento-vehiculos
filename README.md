@@ -111,7 +111,9 @@ El proyecto está preparado para **Vercel** con el **Framework Preset: Hono**:
 
 - El **entry point** `src/index.ts` exporta la aplicación Hono como default
   export (detectado automáticamente por el preset).
-- El frontend compilado se sirve desde `public/` por la CDN de Vercel.
+- El build de Vercel (`npm run build:vercel`) compila el frontend como un **único
+  HTML autocontenido** (`vite-plugin-singlefile`, JS y CSS inline) y lo inyecta
+  en la función. Cualquier ruta que no sea `/api/*` responde con la SPA.
 - La API (`/api/*`) corre como serverless function.
 - **Persistencia con Vercel Blob:** al detectar `process.env.VERCEL`, la app usa
   Blob para guardar `db.json` y las fotos de respaldo (no hay filesystem
@@ -122,8 +124,8 @@ El proyecto está preparado para **Vercel** con el **Framework Preset: Hono**:
 npm run build:vercel
 ```
 
-> ⚠️ En Vercel los estáticos no se sirven desde `dist/` (el middleware local se
-> omite); el deploy usa `public/` y las URLs de fotos apuntan a Blob.
+> ⚠️ En Vercel no se usa el middleware estático local ni `dist/`: la SPA se sirve
+> desde la propia función y las URLs de fotos apuntan a Vercel Blob.
 
 ---
 

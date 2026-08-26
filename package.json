@@ -12,7 +12,7 @@
     "dev:server": "tsx watch --env-file-if-exists=.env src/backend/server.ts",
     "dev:client": "vite --config src/frontend/vite.config.ts",
     "build": "node scripts/build.mjs",
-    "build:vercel": "vite build --config src/frontend/vite.vercel.config.ts",
+    "build:vercel": "node scripts/build.vercel.mjs",
     "start": "node --env-file-if-exists=.env dist/server/index.js",
     "preview": "npm run build && npm start",
     "test": "vitest run",
@@ -38,6 +38,7 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
+    "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.1.8"
   }
 }

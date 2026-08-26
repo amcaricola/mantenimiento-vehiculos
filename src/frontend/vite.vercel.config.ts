@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
+import { viteSingleFile } from 'vite-plugin-singlefile'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,7 +8,7 @@ const dir = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   root: dir,
-  plugins: [preact()],
+  plugins: [preact(), viteSingleFile()],
   publicDir: false,
   resolve: {
     alias: {
