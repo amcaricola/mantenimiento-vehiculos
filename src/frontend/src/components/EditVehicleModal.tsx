@@ -75,7 +75,10 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
 
   async function handleFile(key: string, file: File | undefined) {
     if (!file) return
-    if (!file.type.startsWith('image/')) {
+    const isImage =
+      file.type.startsWith('image/') ||
+      /\.(jpe?g|png|webp|gif|heic|heif|bmp|avif)$/i.test(file.name)
+    if (!isImage) {
       setError('El archivo seleccionado no es una imagen')
       return
     }
@@ -91,12 +94,20 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
       const data = buildPayload()
       const saved = await onSave(data)
       const savedIds = saved.revisiones.map((r) => r.id)
+      const uploadErrors: string[] = []
       for (const [key, file] of Object.entries(pendingFiles)) {
         const index = revisiones.findIndex((r) => r.key === key)
         const revisionId = savedIds[index]
         if (revisionId) {
-          await onUpload(saved.id, revisionId, file)
+          try {
+            await onUpload(saved.id, revisionId, file)
+          } catch (err) {
+            uploadErrors.push(err instanceof Error ? err.message : 'Error al subir la foto')
+          }
         }
+      }
+      if (uploadErrors.length > 0) {
+        throw new Error(`Los datos se guardaron, pero hubo error al subir foto(s): ${uploadErrors.join('; ')}`)
       }
       onClose()
     } catch (err) {
@@ -124,6 +135,7 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
               kilometrajeProximo: r.kilometrajeProximo,
             }
           : {}),
+        imagenRespaldoUrl: r.imagenRespaldoUrl ?? null,
         observaciones: r.observaciones || undefined,
       })),
     }
