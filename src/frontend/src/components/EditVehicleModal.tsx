@@ -172,6 +172,11 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
     try {
       await onDeleteImage(vehiculo.id, revision.id)
       updateRevision(revision.key, { imagenRespaldoUrl: null })
+      setPendingFiles((prev) => {
+        const copy = { ...prev }
+        delete copy[revision.key]
+        return copy
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar la foto')
     }
@@ -281,7 +286,11 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
                     <>
                       <span className="min-w-0 flex-1 truncate text-xs">
                         <span className="font-semibold text-emerald-600">✓ Cargada</span>
-                        <span className="text-slate-500"> · {pendingFiles[rev.key].name}</span>
+                        <span className="text-slate-500">
+                          {rev.imagenRespaldoUrl
+                            ? ' · reemplazará la foto actual'
+                            : ` · ${pendingFiles[rev.key].name}`}
+                        </span>
                       </span>
                       <button type="button" className="btn-outline !min-h-[40px] !px-3 !text-xs" onClick={() => setPendingFiles((p) => { const c = { ...p }; delete c[rev.key]; return c })}>
                         Quitar
@@ -289,10 +298,22 @@ export function EditVehicleModal({ vehiculo, onSave, onUpload, onDeleteImage, on
                     </>
                   ) : rev.imagenRespaldoUrl ? (
                     <>
-                      <img src={rev.imagenRespaldoUrl} alt={`Respaldo ${rev.nombre}`} className="h-14 w-14 rounded-lg object-cover" />
-                      <button type="button" className="btn-outline !min-h-[40px] !px-3 !text-xs" onClick={() => handleRemoveImage(rev)}>
-                        Quitar foto
-                      </button>
+                      <img src={rev.imagenRespaldoUrl} alt={`Respaldo ${rev.nombre}`} className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <label className="btn-outline !min-h-[40px] !w-full !px-3 !text-xs">
+                          Reemplazar
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => handleFile(rev.key, (e.target as HTMLInputElement).files?.[0])}
+                          />
+                        </label>
+                        <button type="button" className="btn-outline !mt-1 !min-h-[40px] !w-full !px-3 !text-xs" onClick={() => handleRemoveImage(rev)}>
+                          Quitar foto
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <>
