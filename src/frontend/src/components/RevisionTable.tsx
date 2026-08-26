@@ -26,10 +26,37 @@ function PhotoIcon({ hasPhoto }: { hasPhoto: boolean }) {
   )
 }
 
-function formatKm(value: number | undefined): string {
-  if (value === undefined) return '—'
-  return value.toLocaleString('es-CL')
+function PhotoButton({ rev, onViewImage }: { rev: RevisionConEstado; onViewImage: Props['onViewImage'] }) {
+  return (
+    <button
+      type="button"
+      aria-label={
+        rev.imagenRespaldoUrl
+          ? `Ver foto de ${rev.nombre}`
+          : `Sin foto de ${rev.nombre}`
+      }
+      disabled={!rev.imagenRespaldoUrl}
+      onClick={() =>
+        rev.imagenRespaldoUrl && onViewImage(rev.imagenRespaldoUrl, rev.nombre)
+      }
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+        rev.imagenRespaldoUrl
+          ? 'text-brand-600 hover:bg-slate-100 active:bg-slate-200'
+          : 'cursor-not-allowed text-slate-400'
+      }`}
+    >
+      <PhotoIcon hasPhoto={Boolean(rev.imagenRespaldoUrl)} />
+    </button>
+  )
 }
+
+function diasClassName(dias: number | null): string {
+  if (dias !== null && dias < 0) return 'text-red-600'
+  if (dias !== null && dias <= DIAS_MARGEN_AVISO) return 'text-amber-600'
+  return 'text-slate-700'
+}
+
+const GRID_COLS = 'sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto]'
 
 export function RevisionTable({ revisiones, onViewImage }: Props) {
   if (revisiones.length === 0) {
@@ -46,70 +73,53 @@ export function RevisionTable({ revisiones, onViewImage }: Props) {
   return (
     <div>
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-3 py-2 font-semibold">Revisión</th>
-              <th className="px-3 py-2 font-semibold">Próx. revisión</th>
-              <th className="px-3 py-2 font-semibold">Días</th>
-              <th className="px-3 py-2 text-right font-semibold">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filas.map((rev) => (
-              <tr key={rev.id} className="border-b border-slate-100 last:border-b-0">
-                <td className="px-3 py-3">
+        <div
+          className={`hidden border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs uppercase tracking-wide text-slate-500 sm:grid ${GRID_COLS} sm:gap-3`}
+        >
+          <span className="font-semibold">Revisión</span>
+          <span className="font-semibold">Próx. revisión</span>
+          <span className="font-semibold">Días</span>
+          <span className="text-right font-semibold">Estado</span>
+        </div>
+
+        <div className="divide-y divide-slate-100 sm:divide-y-0">
+          {filas.map((rev) => (
+            <div
+              key={rev.id}
+              className={`px-3 py-3 sm:grid ${GRID_COLS} sm:items-center sm:gap-3`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
                   <div className="font-semibold text-slate-800">{rev.nombre}</div>
                   {rev.observaciones && (
                     <div className="text-xs text-slate-500">{rev.observaciones}</div>
                   )}
-                </td>
-                <td className="px-3 py-3 text-slate-600">
-                  {formatDateShort(rev.fechaProximaRevision)}
-                </td>
-                <td className="px-3 py-3 font-semibold">
-                  <span
-                    className={
-                      rev.diasRestantes !== null && rev.diasRestantes < 0
-                        ? 'text-red-600'
-                        : rev.diasRestantes !== null &&
-                            rev.diasRestantes <= DIAS_MARGEN_AVISO
-                          ? 'text-amber-600'
-                          : 'text-slate-700'
-                    }
-                  >
-                    {formatDiasRestantes(rev.diasRestantes)}
-                  </span>
-                </td>
-                <td className="px-3 py-3">
-                  <div className="flex items-center justify-end gap-2">
-                    <StatusBadge status={rev.estado} />
-                    <button
-                      type="button"
-                      aria-label={
-                        rev.imagenRespaldoUrl
-                          ? `Ver foto de ${rev.nombre}`
-                          : `Sin foto de ${rev.nombre}`
-                      }
-                      disabled={!rev.imagenRespaldoUrl}
-                      onClick={() =>
-                        rev.imagenRespaldoUrl &&
-                        onViewImage(rev.imagenRespaldoUrl, rev.nombre)
-                      }
-                      className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                        rev.imagenRespaldoUrl
-                          ? 'text-brand-600 hover:bg-slate-100 active:bg-slate-200'
-                          : 'cursor-not-allowed text-slate-400'
-                      }`}
-                    >
-                      <PhotoIcon hasPhoto={Boolean(rev.imagenRespaldoUrl)} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5 sm:hidden">
+                  <StatusBadge status={rev.estado} />
+                  <PhotoButton rev={rev} onViewImage={onViewImage} />
+                </div>
+              </div>
+
+              <div className="mt-1 text-sm text-slate-600 sm:mt-0">
+                <span className="mr-1 text-xs text-slate-400 sm:hidden">Próx.:</span>
+                {formatDateShort(rev.fechaProximaRevision)}
+              </div>
+
+              <div className="mt-0.5 text-sm sm:mt-0">
+                <span className="mr-1 text-xs text-slate-400 sm:hidden">Días:</span>
+                <span className={`font-semibold ${diasClassName(rev.diasRestantes)}`}>
+                  {formatDiasRestantes(rev.diasRestantes)}
+                </span>
+              </div>
+
+              <div className="hidden items-center justify-end gap-2 sm:flex">
+                <StatusBadge status={rev.estado} />
+                <PhotoButton rev={rev} onViewImage={onViewImage} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {kilometraje && (
@@ -127,28 +137,14 @@ export function RevisionTable({ revisiones, onViewImage }: Props) {
               {formatKm(kilometraje.kilometrajeProximo)}
             </div>
           </div>
-          <button
-            type="button"
-            aria-label={
-              kilometraje.imagenRespaldoUrl
-                ? `Ver foto de ${kilometraje.nombre}`
-                : `Sin foto de ${kilometraje.nombre}`
-            }
-            disabled={!kilometraje.imagenRespaldoUrl}
-            onClick={() =>
-              kilometraje.imagenRespaldoUrl &&
-              onViewImage(kilometraje.imagenRespaldoUrl, kilometraje.nombre)
-            }
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-              kilometraje.imagenRespaldoUrl
-                ? 'text-brand-600 hover:bg-slate-100 active:bg-slate-200'
-                : 'cursor-not-allowed text-slate-400'
-            }`}
-          >
-            <PhotoIcon hasPhoto={Boolean(kilometraje.imagenRespaldoUrl)} />
-          </button>
+          <PhotoButton rev={kilometraje} onViewImage={onViewImage} />
         </div>
       )}
     </div>
   )
+}
+
+function formatKm(value: number | undefined): string {
+  if (value === undefined) return '—'
+  return value.toLocaleString('es-CL')
 }
