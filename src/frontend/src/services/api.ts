@@ -81,6 +81,20 @@ export const api = {
   deleteVehicle: (id: string, token: string) =>
     request<void>(`/api/vehicles/${id}`, { method: 'DELETE' }, token),
 
+  exportVehicles: (token: string) =>
+    request<{ version: number; exportedAt: string; vehiculos: Vehiculo[] }>(
+      '/api/vehicles/export',
+      {},
+      token,
+    ),
+
+  importVehicles: (payload: unknown, token: string) =>
+    request<{ imported: number }>('/api/vehicles/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }, token),
+
   login: (masterKey: string) =>
     request<LoginResult>('/api/auth/login', {
       method: 'POST',

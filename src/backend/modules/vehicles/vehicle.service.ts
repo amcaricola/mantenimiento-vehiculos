@@ -66,6 +66,16 @@ export class VehicleService {
     return this.storage.remove(id)
   }
 
+  async exportAll(): Promise<Vehiculo[]> {
+    return this.storage.findAll()
+  }
+
+  async importAll(vehiculos: Vehiculo[]): Promise<{ count: number }> {
+    const normalized = ensureUniqueIds(vehiculos)
+    await this.storage.replaceAll(normalized)
+    return { count: normalized.length }
+  }
+
   async attachImage(
     vehicleId: string,
     revisionId: string,
@@ -128,4 +138,23 @@ export function enrichVehiculo(
     }
   })
   return { ...vehiculo, revisiones }
+}
+
+export function ensureUniqueIds(vehiculos: Vehiculo[]): Vehiculo[] {
+  const usedVehicleIds = new Set<string>()
+  return vehiculos.map((vehiculo) => {
+    let vehicleId = vehiculo.id
+    if (usedVehicleIds.has(vehicleId)) vehicleId = crypto.randomUUID()
+    usedVehicleIds.add(vehicleId)
+
+    const usedRevisionIds = new Set<string>()
+    const revisiones = vehiculo.revisiones.map((revision) => {
+      let revisionId = revision.id
+      if (usedRevisionIds.has(revisionId)) revisionId = crypto.randomUUID()
+      usedRevisionIds.add(revisionId)
+      return { ...revision, id: revisionId }
+    })
+
+    return { ...vehiculo, id: vehicleId, revisiones }
+  })
 }

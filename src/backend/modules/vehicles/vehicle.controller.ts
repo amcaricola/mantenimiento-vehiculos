@@ -1,11 +1,13 @@
 import { Hono } from 'hono'
 import type { z } from 'zod'
 import type { AppContext } from '../../app.types.js'
+import { DB_VERSION } from '../../storage/json-db.repository.js'
 import { ApiError } from '../../middleware/error.middleware.js'
 import { authMiddleware } from '../../middleware/auth.middleware.js'
 import {
   vehiculoInputSchema,
   vehiculoUpdateSchema,
+  importPayloadSchema,
 } from './vehicle.schema.js'
 
 function parseBodyOrThrow<S extends z.ZodTypeAny>(schema: S, data: unknown): z.output<S> {
@@ -25,6 +27,24 @@ export function createVehicleController() {
   app.get('/', async (c) => {
     const service = c.get('vehicleService')
     return c.json(await service.list())
+  })
+
+  app.get('/export', authMiddleware(), async (c) => {
+    const service = c.get('vehicleService')
+    const vehiculos = await service.exportAll()
+    return c.json({
+      version: DB_VERSION,
+      exportedAt: new Date().toISOString(),
+      vehiculos,
+    })
+  })
+
+  app.post('/import', authMiddleware(), async (c) => {
+    const input = parseBodyOrThrow(importPayloadSchema, await c.req.json())
+    const vehiculos = Array.isArray(input) ? input : input.vehiculos
+    const service = c.get('vehicleService')
+    const result = await service.importAll(vehiculos)
+    return c.json({ imported: result.count })
   })
 
   app.get('/:id', async (c) => {

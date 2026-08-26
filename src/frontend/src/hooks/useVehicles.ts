@@ -94,6 +94,21 @@ export function useVehicles(token: string | null) {
     [token],
   )
 
+  const exportVehicles = useCallback(async () => {
+    if (!token) throw new Error('Sin sesión')
+    return api.exportVehicles(token)
+  }, [token])
+
+  const importVehicles = useCallback(
+    async (payload: unknown) => {
+      if (!token) throw new Error('Sin sesión')
+      const result = await api.importVehicles(payload, token)
+      await refresh()
+      return result
+    },
+    [token, refresh],
+  )
+
   return {
     vehicles,
     loading,
@@ -104,5 +119,7 @@ export function useVehicles(token: string | null) {
     removeVehicle,
     uploadImage,
     deleteImage,
+    exportVehicles,
+    importVehicles,
   }
 }

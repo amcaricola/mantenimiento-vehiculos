@@ -192,6 +192,8 @@ El margen de aviso es fijo: `DIAS_MARGEN_AVISO = 15`.
 | `POST` | `/api/vehicles` | 🔒 Token | Crear vehículo |
 | `PUT` | `/api/vehicles/:id` | 🔒 Token | Actualizar vehículo y sus revisiones |
 | `DELETE` | `/api/vehicles/:id` | 🔒 Token | Eliminar vehículo |
+| `GET` | `/api/vehicles/export` | 🔒 Token | Exportar respaldo de todos los vehículos (JSON) |
+| `POST` | `/api/vehicles/import` | 🔒 Token | Importar/restaurar vehículos desde un respaldo JSON |
 | `POST` | `/api/vehicles/:id/revision/:revId/image` | 🔒 Token | Subir foto de respaldo |
 | `DELETE` | `/api/vehicles/:id/revision/:revId/image` | 🔒 Token | Eliminar foto de respaldo |
 | `GET` | `/api/health` | Público | Estado del servidor |

@@ -215,4 +215,77 @@ describe('API de vehículos', () => {
     )
     expect(res.status).toBe(400)
   })
+
+  describe('export / import', () => {
+    it('requiere token para exportar', async () => {
+      const { app } = await setup()
+      const res = await app.request('/api/vehicles/export')
+      expect(res.status).toBe(401)
+    })
+
+    it('exporta los vehículos con token', async () => {
+      const { app } = await setup()
+      const token = await login(app)
+      const res = await app.request('/api/vehicles/export', { headers: bearer(token) })
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as {
+        version: number
+        exportedAt: string
+        vehiculos: Vehiculo[]
+      }
+      expect(body.vehiculos.length).toBeGreaterThanOrEqual(2)
+      expect(body.vehiculos[0].id).toBeTruthy()
+    })
+
+    it('importa datos y reemplaza la lista', async () => {
+      const { app } = await setup()
+      const token = await login(app)
+
+      const exportRes = await app.request('/api/vehicles/export', {
+        headers: bearer(token),
+      })
+      const exported = (await exportRes.json()) as {
+        vehiculos: Vehiculo[]
+      }
+      const backup = exported.vehiculos[0]
+
+      const importRes = await app.request('/api/vehicles/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...bearer(token) },
+        body: JSON.stringify({
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          vehiculos: [backup],
+        }),
+      })
+      expect(importRes.status).toBe(200)
+      const result = (await importRes.json()) as { imported: number }
+      expect(result.imported).toBe(1)
+
+      const listRes = await app.request('/api/vehicles')
+      const list = (await listRes.json()) as Vehiculo[]
+      expect(list).toHaveLength(1)
+    })
+
+    it('rechaza importar un payload inválido', async () => {
+      const { app } = await setup()
+      const token = await login(app)
+      const res = await app.request('/api/vehicles/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...bearer(token) },
+        body: JSON.stringify({ vehiculos: [{ patente: 'X' }] }),
+      })
+      expect(res.status).toBe(400)
+    })
+
+    it('requiere token para importar', async () => {
+      const { app } = await setup()
+      const res = await app.request('/api/vehicles/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehiculos: [] }),
+      })
+      expect(res.status).toBe(401)
+    })
+  })
 })

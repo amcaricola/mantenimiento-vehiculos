@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useRef, useState } from 'preact/hooks'
 import type { VehiculoConEstado } from '../../../shared/types.js'
 import { useVehicles } from '../hooks/useVehicles.js'
 import { VehicleCard } from '../components/VehicleCard.js'
@@ -19,11 +19,15 @@ export function AdminDashboard({ token, search }: Props) {
     removeVehicle,
     uploadImage,
     deleteImage,
+    exportVehicles,
+    importVehicles,
   } = useVehicles(token)
 
   const [editing, setEditing] = useState<VehiculoConEstado | null>(null)
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<VehiculoConEstado | null>(null)
+  const [backupMsg, setBackupMsg] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const filtered = vehicles.filter((v) => {
     const q = search.trim().toLowerCase()
@@ -49,6 +53,47 @@ export function AdminDashboard({ token, search }: Props) {
     setDeleting(null)
   }
 
+  async function handleExport() {
+    setBackupMsg(null)
+    try {
+      const data = await exportVehicles()
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `respaldo-vehiculos-${data.exportedAt.slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      setBackupMsg('Respaldo exportado correctamente')
+    } catch (err) {
+      setBackupMsg(err instanceof Error ? err.message : 'Error al exportar')
+    }
+  }
+
+  async function handleImportFile(e: Event) {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (!file) return
+
+    const confirmed = window.confirm(
+      'Se reemplazarán todos los vehículos actuales con los datos del archivo. ¿Continuar?',
+    )
+    if (!confirmed) return
+
+    setBackupMsg(null)
+    try {
+      const text = await file.text()
+      const payload = JSON.parse(text)
+      const result = await importVehicles(payload)
+      setBackupMsg(`Se importaron ${result.imported} vehículo(s) correctamente`)
+    } catch (err) {
+      setBackupMsg(err instanceof Error ? err.message : 'Archivo inválido')
+    }
+  }
+
   const modalOpen = creating || editing !== null
 
   return (
@@ -71,6 +116,33 @@ export function AdminDashboard({ token, search }: Props) {
           onDelete={setDeleting}
         />
       ))}
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <h3 className="text-sm font-bold text-slate-800">Respaldo de datos</h3>
+        <p className="mt-1 text-xs text-slate-500">
+          Exporta o importa la información de los vehículos en formato JSON.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button type="button" className="btn-outline flex-1" onClick={handleExport}>
+            Exportar
+          </button>
+          <button
+            type="button"
+            className="btn-outline flex-1"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Importar
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={handleImportFile}
+          />
+        </div>
+        {backupMsg && <p className="mt-2 text-xs text-slate-600">{backupMsg}</p>}
+      </div>
 
       <button
         type="button"

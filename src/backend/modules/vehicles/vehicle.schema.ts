@@ -31,6 +31,39 @@ export const vehiculoInputSchema = z.object({
 
 export const vehiculoUpdateSchema = vehiculoInputSchema.partial()
 
+export const importRevisionSchema = z.object({
+  id: z.string().min(1),
+  tipo: z.enum(TIPOS_REVISION),
+  nombre: z.string().min(1, 'El nombre de la revisión es obligatorio'),
+  fechaProximaRevision: isoDateSchema.optional(),
+  kilometrajeActual: z.number().nonnegative().optional(),
+  kilometrajeProximo: z.number().nonnegative().optional(),
+  imagenRespaldoUrl: z.string().nullable().optional(),
+  observaciones: z.string().optional(),
+})
+
+export const importVehiculoSchema = z.object({
+  id: z.string().min(1),
+  patente: z.string().min(1),
+  marca: z.string().min(1),
+  modelo: z.string().min(1),
+  tipo: z.string().min(1),
+  fechaUltimaRevision: isoDateSchema.optional(),
+  revisiones: z.array(importRevisionSchema).default([]),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+})
+
+export const importPayloadSchema = z.union([
+  z.object({
+    version: z.number().optional(),
+    exportedAt: z.string().optional(),
+    vehiculos: z.array(importVehiculoSchema),
+  }),
+  z.array(importVehiculoSchema),
+])
+
 export type VehiculoInput = z.infer<typeof vehiculoInputSchema>
 export type VehiculoUpdateInput = z.infer<typeof vehiculoUpdateSchema>
 export type ItemRevisionInput = z.infer<typeof itemRevisionInputSchema>
+export type ImportVehiculo = z.infer<typeof importVehiculoSchema>
