@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from 'hono'
-import type { AppContext } from '../app.types'
+import type { AppContext } from '../app.types.js'
 
 export function authMiddleware(): MiddlewareHandler<AppContext> {
   return async (c, next) => {

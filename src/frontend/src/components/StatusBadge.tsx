@@ -1,4 +1,4 @@
-import type { RevisionStatus } from '../../../shared/types'
+import type { RevisionStatus } from '../../../shared/types.js'
 
 const DOT_COLORS: Record<RevisionStatus, { color: string; label: string }> = {
   vencido: { color: 'bg-red-500', label: 'Vencido' },

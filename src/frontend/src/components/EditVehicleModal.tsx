@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks'
-import type { ItemRevision, TipoRevision, Vehiculo, VehiculoConEstado } from '../../../shared/types'
-import { NOMBRES_REVISION, TIPOS_REVISION } from '../../../shared/types'
+import type { ItemRevision, TipoRevision, Vehiculo, VehiculoConEstado } from '../../../shared/types.js'
+import { NOMBRES_REVISION, TIPOS_REVISION } from '../../../shared/types.js'
 
 interface RevisionDraft extends Omit<ItemRevision, 'id'> {
   key: string

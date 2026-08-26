@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { TIPOS_REVISION } from '../../../shared/types'
+import { TIPOS_REVISION } from '../../../shared/types.js'
 
 export const isoDateSchema = z
   .string()

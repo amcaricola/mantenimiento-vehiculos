@@ -1,5 +1,5 @@
-import { useVehicles } from '../hooks/useVehicles'
-import { VehicleCard } from '../components/VehicleCard'
+import { useVehicles } from '../hooks/useVehicles.js'
+import { VehicleCard } from '../components/VehicleCard.js'
 
 interface Props {
   search: string

@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
-import type { ItemRevision, TipoRevision, Vehiculo } from '../../shared/types'
-import { NOMBRES_REVISION } from '../../shared/types'
+import type { ItemRevision, TipoRevision, Vehiculo } from '../../shared/types.js'
+import { NOMBRES_REVISION } from '../../shared/types.js'
 
 function isoFromOffset(days: number, base: Date = new Date()): string {
   const d = new Date(base)

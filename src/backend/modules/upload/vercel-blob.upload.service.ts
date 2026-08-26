@@ -1,8 +1,8 @@
 import crypto from 'node:crypto'
 import path from 'node:path'
 import { put, del } from '@vercel/blob'
-import { ApiError } from '../../middleware/error.middleware'
-import type { UploadServiceContract } from './upload.service'
+import { ApiError } from '../../middleware/error.middleware.js'
+import type { UploadServiceContract } from './upload.service.js'
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',

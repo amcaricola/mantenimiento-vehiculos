@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import crypto from 'node:crypto'
-import { ApiError } from '../../middleware/error.middleware'
+import { ApiError } from '../../middleware/error.middleware.js'
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',

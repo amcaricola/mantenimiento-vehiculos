@@ -1,9 +1,9 @@
 import { useState } from 'preact/hooks'
-import { useAuth } from './hooks/useAuth'
-import { Header } from './components/Header'
-import { MasterKeyModal } from './components/MasterKeyModal'
-import { PublicDashboard } from './pages/PublicDashboard'
-import { AdminDashboard } from './pages/AdminDashboard'
+import { useAuth } from './hooks/useAuth.js'
+import { Header } from './components/Header.js'
+import { MasterKeyModal } from './components/MasterKeyModal.js'
+import { PublicDashboard } from './pages/PublicDashboard.js'
+import { AdminDashboard } from './pages/AdminDashboard.js'
 
 export function App() {
   const { token, isAdmin, verifying, login, logout } = useAuth()

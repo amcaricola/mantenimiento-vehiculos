@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'preact/hooks'
-import { api } from '../services/api'
+import { api } from '../services/api.js'
 
 const TOKEN_KEY = 'auth_token'
 

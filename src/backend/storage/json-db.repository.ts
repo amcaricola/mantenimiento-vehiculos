@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import type { DatabaseSchema, Vehiculo } from '../../shared/types'
-import type { Storage } from './storage.interface'
-import { seedVehiculos } from './seed'
+import type { DatabaseSchema, Vehiculo } from '../../shared/types.js'
+import type { Storage } from './storage.interface.js'
+import { seedVehiculos } from './seed.js'
 
 export const DB_VERSION = 1
 

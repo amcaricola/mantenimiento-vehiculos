@@ -3,14 +3,14 @@ import type {
   Vehiculo,
   VehiculoConEstado,
   RevisionConEstado,
-} from '../../../shared/types'
-import { getDiasRestantes, getRevisionStatus } from '../../../shared/dates'
-import type { Storage } from '../../storage/storage.interface'
+} from '../../../shared/types.js'
+import { getDiasRestantes, getRevisionStatus } from '../../../shared/dates.js'
+import type { Storage } from '../../storage/storage.interface.js'
 import type {
   ItemRevisionInput,
   VehiculoInput,
   VehiculoUpdateInput,
-} from './vehicle.schema'
+} from './vehicle.schema.js'
 
 export class VehicleService {
   constructor(private readonly storage: Storage) {}

@@ -4,7 +4,7 @@ export {
   getRevisionStatus,
   formatDiasRestantes,
   formatDateShort,
-} from '../../../shared/dates'
+} from '../../../shared/dates.js'
 
 export function todayISO(): string {
   const d = new Date()

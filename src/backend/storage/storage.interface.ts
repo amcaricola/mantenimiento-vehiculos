@@ -1,4 +1,4 @@
-import type { Vehiculo } from '../../shared/types'
+import type { Vehiculo } from '../../shared/types.js'
 
 export interface Storage {
   findAll(): Promise<Vehiculo[]>

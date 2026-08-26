@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import type { AppContext } from '../../app.types'
-import { ApiError } from '../../middleware/error.middleware'
+import type { AppContext } from '../../app.types.js'
+import { ApiError } from '../../middleware/error.middleware.js'
 
 export function createAuthController() {
   const app = new Hono<AppContext>()

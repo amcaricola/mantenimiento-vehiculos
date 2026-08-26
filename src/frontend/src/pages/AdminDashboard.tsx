@@ -1,8 +1,8 @@
 import { useState } from 'preact/hooks'
-import type { VehiculoConEstado } from '../../../shared/types'
-import { useVehicles } from '../hooks/useVehicles'
-import { VehicleCard } from '../components/VehicleCard'
-import { EditVehicleModal } from '../components/EditVehicleModal'
+import type { VehiculoConEstado } from '../../../shared/types.js'
+import { useVehicles } from '../hooks/useVehicles.js'
+import { VehicleCard } from '../components/VehicleCard.js'
+import { EditVehicleModal } from '../components/EditVehicleModal.js'
 
 interface Props {
   token: string

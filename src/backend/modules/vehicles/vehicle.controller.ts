@@ -1,12 +1,12 @@
 import { Hono } from 'hono'
 import type { z } from 'zod'
-import type { AppContext } from '../../app.types'
-import { ApiError } from '../../middleware/error.middleware'
-import { authMiddleware } from '../../middleware/auth.middleware'
+import type { AppContext } from '../../app.types.js'
+import { ApiError } from '../../middleware/error.middleware.js'
+import { authMiddleware } from '../../middleware/auth.middleware.js'
 import {
   vehiculoInputSchema,
   vehiculoUpdateSchema,
-} from './vehicle.schema'
+} from './vehicle.schema.js'
 
 function parseBodyOrThrow<S extends z.ZodTypeAny>(schema: S, data: unknown): z.output<S> {
   const result = schema.safeParse(data)

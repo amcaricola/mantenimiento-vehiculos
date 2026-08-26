@@ -150,6 +150,7 @@ Al implementar o modificar código:
 2. **Escribir Código Modular y Tipado:**
    - No usar `any` en TypeScript.
    - Separar controladores, servicios y repositorio.
+   - **Usar imports relativos con extensión `.js`** (ej: `from './services/api.js'`). Esto es obligatorio para que el output ESM compilado por Vercel resuelva los módulos en Node (`moduleResolution: Bundler` permite el mapeo `.js` → `.ts`).
 3. **Ejecutar Pruebas Antes de Finalizar:**
    - Ejecutar `npm test` para verificar que ninguna funcionalidad existente se rompa.
    - Agregar tests unitarios para nuevas utilidades (especialmente cálculos de fechas y reglas de negocio).

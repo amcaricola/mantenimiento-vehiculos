@@ -1,8 +1,8 @@
 import { list, put } from '@vercel/blob'
-import type { DatabaseSchema, Vehiculo } from '../../shared/types'
-import type { Storage } from './storage.interface'
-import { seedVehiculos } from './seed'
-import { DB_VERSION } from './json-db.repository'
+import type { DatabaseSchema, Vehiculo } from '../../shared/types.js'
+import type { Storage } from './storage.interface.js'
+import { seedVehiculos } from './seed.js'
+import { DB_VERSION } from './json-db.repository.js'
 
 const DB_PATHNAME = 'db.json'
 

@@ -1,4 +1,4 @@
-import type { Vehiculo, VehiculoConEstado } from '../../../shared/types'
+import type { Vehiculo, VehiculoConEstado } from '../../../shared/types.js'
 
 export class UnauthorizedError extends Error {
   constructor(message = 'Sesión expirada') {

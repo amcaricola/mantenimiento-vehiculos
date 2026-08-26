@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'preact/hooks'
-import type { Vehiculo, VehiculoConEstado } from '../../../shared/types'
-import { getDiasRestantes, getRevisionStatus } from '../../../shared/dates'
-import { api } from '../services/api'
+import type { Vehiculo, VehiculoConEstado } from '../../../shared/types.js'
+import { getDiasRestantes, getRevisionStatus } from '../../../shared/dates.js'
+import { api } from '../services/api.js'
 
 function toVehiculoConEstado(v: Vehiculo): VehiculoConEstado {
   return {

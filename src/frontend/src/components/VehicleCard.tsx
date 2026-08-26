@@ -1,8 +1,8 @@
 import { useState } from 'preact/hooks'
-import type { VehiculoConEstado } from '../../../shared/types'
-import { formatDateShort } from '../utils/dateUtils'
-import { RevisionTable } from './RevisionTable'
-import { ImagePreviewModal } from './ImagePreviewModal'
+import type { VehiculoConEstado } from '../../../shared/types.js'
+import { formatDateShort } from '../utils/dateUtils.js'
+import { RevisionTable } from './RevisionTable.js'
+import { ImagePreviewModal } from './ImagePreviewModal.js'
 
 interface Props {
   vehiculo: VehiculoConEstado

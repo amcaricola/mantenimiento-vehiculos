@@ -1,7 +1,7 @@
-import type { RevisionConEstado } from '../../../shared/types'
-import { DIAS_MARGEN_AVISO } from '../../../shared/types'
-import { formatDateShort, formatDiasRestantes } from '../utils/dateUtils'
-import { StatusBadge } from './StatusBadge'
+import type { RevisionConEstado } from '../../../shared/types.js'
+import { DIAS_MARGEN_AVISO } from '../../../shared/types.js'
+import { formatDateShort, formatDiasRestantes } from '../utils/dateUtils.js'
+import { StatusBadge } from './StatusBadge.js'
 
 interface Props {
   revisiones: RevisionConEstado[]

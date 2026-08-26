@@ -1,4 +1,4 @@
-import { DIAS_MARGEN_AVISO, type RevisionStatus } from './types'
+import { DIAS_MARGEN_AVISO, type RevisionStatus } from './types.js'
 
 const MS_PER_DAY = 86_400_000
 
