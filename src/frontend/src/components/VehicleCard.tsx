@@ -48,9 +48,10 @@ export function VehicleCard({ vehiculo, admin = false, onEdit, onDelete }: Props
           <span className="block text-lg font-bold tracking-wide text-slate-900">
             {vehiculo.patente}
           </span>
-          <span className="block truncate text-sm text-slate-600">
-            {vehiculo.marca} {vehiculo.modelo} · {vehiculo.tipo}
+          <span className="block text-sm text-slate-600">
+            {vehiculo.marca} {vehiculo.modelo}
           </span>
+          <span className="block text-xs text-slate-500">{vehiculo.tipo}</span>
         </span>
         <span className="shrink-0 text-right">
           <span className="block text-xs text-slate-500">Últ. revisión</span>
