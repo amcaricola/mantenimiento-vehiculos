@@ -36,6 +36,7 @@ export class VercelBlobRepository implements Storage {
     const res = await put(DB_PATHNAME, JSON.stringify(data), {
       access: 'public',
       addRandomSuffix: false,
+      allowOverwrite: true,
       contentType: 'application/json',
     })
     this.url = res.url
