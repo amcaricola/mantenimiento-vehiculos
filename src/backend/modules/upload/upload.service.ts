@@ -15,7 +15,12 @@ const ALLOWED_MIME_TYPES = [
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024
 
-export class UploadService {
+export interface UploadServiceContract {
+  save(file: File): Promise<string>
+  removeByUrl(url: string): Promise<void>
+}
+
+export class UploadService implements UploadServiceContract {
   constructor(private readonly dir: string) {}
 
   private async ensureDir(): Promise<void> {

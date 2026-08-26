@@ -21,6 +21,7 @@ await build({
   outfile: path.join(root, 'dist/server/index.js'),
   sourcemap: false,
   minify: false,
+  external: ['@vercel/blob'],
 })
 
 console.log('[build] Completado. Ejecuta "npm start" para iniciar el servidor.')

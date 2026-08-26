@@ -33,7 +33,7 @@ Permite a los usuarios y operarios verificar rápidamente el estado de las revis
 | **Base de Datos** | **Flat-File JSON (`data/db.json`)** | Acceder **únicamente** a través del patrón Repositorio (`JsonDbRepository`). No hacer manipulaciones directas de `fs` fuera de la capa de almacenamiento. |
 | **Almacenamiento de Fotos** | **Directorio Local (`uploads/`)** | Guardar archivos con nombres únicos (ej: UUID + extensión). Máximo 1 foto por revisión de vehículo. |
 | **Testing** | **Vitest** | Todo nuevo módulo o refactor debe incluir pruebas unitarias o de integración. |
-| **Despliegue** | **Node.js estándar (`npm start`)** | El despliegue es únicamente con `npm run build` + `npm start`. Los directorios `data/` y `uploads/` son carpetas locales persistentes (montables como volumen del servidor). |
+| **Despliegue** | **Node.js estándar (`npm start`)** | Despliegue principal con `npm run build` + `npm start`. También compatible con **Vercel** (preset Hono, entry `src/index.ts`, estáticos en `public/` y persistencia con Vercel Blob al detectar `process.env.VERCEL`). Los directorios `data/` y `uploads/` son carpetas locales persistentes. |
 
 ---
 
@@ -49,7 +49,7 @@ mantenimiento-vehiculos/
 │   │   ├── config/             # Configuración y validación de variables de entorno
 │   │   ├── middleware/         # Middleware de Auth (24h JWT), errores, CORS, static
 │   │   ├── modules/            # Módulos por dominio (auth, vehicles, upload)
-│   │   ├── storage/            # Repositorio de persistencia JSON (Storage Interface)
+│   │   ├── storage/            # Repositorios de persistencia (local JSON y Vercel Blob)
 │   │   └── app.ts              # Punto de entrada de la aplicación Hono
 │   ├── frontend/               # Aplicación Preact SPA
 │   │   ├── src/
@@ -58,10 +58,13 @@ mantenimiento-vehiculos/
 │   │   │   ├── pages/          # Páginas (PublicDashboard, AdminDashboard)
 │   │   │   ├── services/       # Cliente API HTTP
 │   │   │   └── utils/          # Utilidades (cálculo de fechas y días restantes)
-│   │   └── vite.config.ts
+│   │   ├── vite.config.ts
+│   │   └── vite.vercel.config.ts
+│   ├── index.ts                # Entry point para Vercel (default export Hono app)
 │   └── shared/                 # Tipos TypeScript compartidos (Frontend <-> Backend)
 │       └── types.ts
 ├── tests/                      # Suite de pruebas automatizadas con Vitest
+├── vercel.json                 # Configuración de deploy en Vercel (preset Hono)
 ├── package.json
 └── tsconfig.json
 ```

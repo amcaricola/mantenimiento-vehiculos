@@ -2,9 +2,9 @@ import { serve } from '@hono/node-server'
 import { createApp } from './app'
 import { loadEnv } from './config/env'
 
-async function main() {
+function main() {
   const env = loadEnv()
-  const { app } = await createApp(env)
+  const { app } = createApp(env)
 
   serve(
     {
@@ -17,7 +17,4 @@ async function main() {
   )
 }
 
-main().catch((err) => {
-  console.error('[mantenimiento-vehiculos] Error al iniciar el servidor:', err)
-  process.exit(1)
-})
+main()

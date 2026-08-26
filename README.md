@@ -95,6 +95,38 @@ servidor garantiza que la información no se pierda al reiniciar o actualizar.
 
 ---
 
+## ▲ Deploy en Vercel (preset Hono)
+
+El proyecto está preparado para **Vercel** con el **Framework Preset: Hono**:
+
+1. Importa el repositorio en Vercel (o usa `vercel` CLI).
+2. En **Project Settings > Framework Preset** selecciona **Hono** (ya forzado por
+   `vercel.json`). El build usa `npm run build:vercel`, que compila el frontend
+   dentro de `public/` (servido por la CDN de Vercel).
+3. Crea un **Blob Store** en **Storage** de tu proyecto Vercel. Vercel inyecta
+   automáticamente `BLOB_READ_WRITE_TOKEN` (no hace falta copiarlo).
+4. Define `MASTER_KEY` y `JWT_SECRET` en las variables de entorno del proyecto.
+
+### Cómo funciona
+
+- El **entry point** `src/index.ts` exporta la aplicación Hono como default
+  export (detectado automáticamente por el preset).
+- El frontend compilado se sirve desde `public/` por la CDN de Vercel.
+- La API (`/api/*`) corre como serverless function.
+- **Persistencia con Vercel Blob:** al detectar `process.env.VERCEL`, la app usa
+  Blob para guardar `db.json` y las fotos de respaldo (no hay filesystem
+  persistente en serverless). En local sigue usando `data/` y `uploads/`.
+
+```bash
+# Verificación local del build de Vercel
+npm run build:vercel
+```
+
+> ⚠️ En Vercel los estáticos no se sirven desde `dist/` (el middleware local se
+> omite); el deploy usa `public/` y las URLs de fotos apuntan a Blob.
+
+---
+
 ## 🔐 Modos de uso
 
 - **Modo Revisión (público):** cualquier usuario ve los vehículos, los días
