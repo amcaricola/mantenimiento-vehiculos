@@ -22,14 +22,9 @@ export function Header({ isAdmin, onToggleAdmin, onLogout, search, onSearchChang
           </p>
         </div>
         {isAdmin ? (
-          <div className="flex gap-2">
-            <button type="button" onClick={onLogout} className="btn-outline !min-h-[40px] !border-white/40 !bg-white/10 !px-3 !text-xs !text-white">
-              Salir
-            </button>
-            <button type="button" onClick={onToggleAdmin} className="btn-outline !min-h-[40px] !border-white/40 !bg-white/10 !px-3 !text-xs !text-white">
-              Ver revisión
-            </button>
-          </div>
+          <button type="button" onClick={onLogout} className="btn-outline !min-h-[40px] !border-white/40 !bg-white/10 !px-3 !text-xs !text-white">
+            Salir
+          </button>
         ) : (
           <button type="button" onClick={onToggleAdmin} className="btn-outline !min-h-[40px] !border-white/40 !bg-white/10 !px-3 !text-xs !text-white">
             Modo edición

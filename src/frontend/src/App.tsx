@@ -12,6 +12,11 @@ export function App() {
 
   const showAdmin = isAdmin || wantAdmin
 
+  const handleLogout = () => {
+    logout()
+    setWantAdmin(false)
+  }
+
   return (
     <div className="min-h-screen">
       <Header
@@ -23,7 +28,7 @@ export function App() {
             setWantAdmin(true)
           }
         }}
-        onLogout={logout}
+        onLogout={handleLogout}
         search={search}
         onSearchChange={setSearch}
       />

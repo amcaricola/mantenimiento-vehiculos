@@ -25,7 +25,9 @@ export class VercelBlobRepository implements Storage {
     if (!this.url) {
       throw new Error('No se pudo inicializar la base de datos en Vercel Blob')
     }
-    const res = await fetch(this.url)
+    const res = await fetch(this.url, {
+      headers: { 'cache-control': 'no-cache' },
+    })
     if (!res.ok) {
       throw new Error(`Error al leer la base de datos remota (${res.status})`)
     }
@@ -38,6 +40,7 @@ export class VercelBlobRepository implements Storage {
       addRandomSuffix: false,
       allowOverwrite: true,
       contentType: 'application/json',
+      cacheControlMaxAge: 0,
     })
     this.url = res.url
   }
