@@ -1,19 +1,25 @@
-import { list, put } from '@vercel/blob'
+import { list, put, del } from '@vercel/blob'
 import type { DatabaseSchema, Vehiculo } from '../../shared/types.js'
 import type { Storage } from './storage.interface.js'
 import { seedVehiculos } from './seed.js'
 import { DB_VERSION } from './json-db.repository.js'
 
+// Cada escritura usa una URL única (addRandomSuffix) para evitar por completo
+// la caché del CDN y la invalidación por sobrescritura del mismo pathname.
 const DB_PATHNAME = 'db.json'
+const DB_PREFIX = 'db.json-'
 
 export class VercelBlobRepository implements Storage {
   private url: string | null = null
 
   private async ensure(): Promise<void> {
     if (this.url) return
-    const { blobs } = await list({ prefix: DB_PATHNAME, limit: 1 })
+    const { blobs } = await list({ prefix: DB_PREFIX, limit: 20 })
     if (blobs.length > 0) {
-      this.url = blobs[0].url
+      const latest = [...blobs].sort(
+        (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
+      )[0]
+      this.url = latest.url
       return
     }
     const data: DatabaseSchema = { version: DB_VERSION, vehiculos: seedVehiculos() }
@@ -25,7 +31,17 @@ export class VercelBlobRepository implements Storage {
     if (!this.url) {
       throw new Error('No se pudo inicializar la base de datos en Vercel Blob')
     }
-    const res = await fetch(this.url)
+    let res = await fetch(this.url)
+    if (res.status === 404) {
+      // La URL fue reemplazada (otra instancia escribió y borró la anterior);
+      // se relista el blob más reciente y se reintenta una vez.
+      this.url = null
+      await this.ensure()
+      if (!this.url) {
+        throw new Error('No se pudo inicializar la base de datos en Vercel Blob')
+      }
+      res = await fetch(this.url)
+    }
     if (!res.ok) {
       throw new Error(`Error al leer la base de datos remota (${res.status})`)
     }
@@ -33,14 +49,21 @@ export class VercelBlobRepository implements Storage {
   }
 
   private async write(data: DatabaseSchema): Promise<void> {
+    const previousUrl = this.url
     const res = await put(DB_PATHNAME, JSON.stringify(data), {
       access: 'public',
-      addRandomSuffix: false,
-      allowOverwrite: true,
+      addRandomSuffix: true,
       contentType: 'application/json',
-      cacheControlMaxAge: 5,
+      cacheControlMaxAge: 0,
     })
     this.url = res.url
+    if (previousUrl && previousUrl !== res.url) {
+      try {
+        await del(previousUrl)
+      } catch {
+        // Otra instancia ya pudo eliminarlo
+      }
+    }
   }
 
   async init(): Promise<void> {

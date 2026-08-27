@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import type { VehiculoConEstado } from '../../../shared/types.js'
+import type { RevisionStatus, VehiculoConEstado } from '../../../shared/types.js'
 import { formatDateShort } from '../utils/dateUtils.js'
 import { RevisionTable } from './RevisionTable.js'
 import { ImagePreviewModal } from './ImagePreviewModal.js'
@@ -11,15 +11,25 @@ interface Props {
   onDelete?: (vehiculo: VehiculoConEstado) => void
 }
 
+const GLOBAL_STATUS: Record<RevisionStatus, { label: string; badge: string; dot: string }> = {
+  vencido: { label: 'Vencido', badge: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
+  proximo: { label: 'Próximo', badge: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+  al_dia: { label: 'Al día', badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+  sin_fecha: { label: 'Sin fecha', badge: 'bg-slate-100 text-slate-600', dot: 'bg-slate-400' },
+}
+
 export function VehicleCard({ vehiculo, admin = false, onEdit, onDelete }: Props) {
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
   const [preview, setPreview] = useState<{ url: string; nombre: string } | null>(null)
 
-  const worstStatus = vehiculo.revisiones
-    .map((r) => r.estado)
-    .sort((a, b) => orderOf(a) - orderOf(b))[0]
+  const worstStatus =
+    vehiculo.revisiones
+      .map((r) => r.estado)
+      .sort((a, b) => orderOf(a) - orderOf(b))[0] ?? 'sin_fecha'
 
-  function orderOf(status: string): number {
+  const globalStatus = GLOBAL_STATUS[worstStatus]
+
+  function orderOf(status: RevisionStatus): number {
     if (status === 'vencido') return 0
     if (status === 'proximo') return 1
     return 2
@@ -41,7 +51,7 @@ export function VehicleCard({ vehiculo, admin = false, onEdit, onDelete }: Props
         aria-expanded={expanded}
       >
         <span
-          className={`flex h-3 w-3 shrink-0 rounded-full ${statusColors[worstStatus ?? 'sin_fecha']}`}
+          className={`flex h-3 w-3 shrink-0 rounded-full ${statusColors[worstStatus]}`}
           aria-hidden="true"
         />
         <span className="min-w-0 flex-1">
@@ -52,6 +62,14 @@ export function VehicleCard({ vehiculo, admin = false, onEdit, onDelete }: Props
             {vehiculo.marca} {vehiculo.modelo}
           </span>
           <span className="block text-xs text-slate-500">{vehiculo.tipo}</span>
+          {!expanded && (
+            <span
+              className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${globalStatus.badge}`}
+            >
+              <span className={`h-2 w-2 rounded-full ${globalStatus.dot}`} aria-hidden="true" />
+              {globalStatus.label}
+            </span>
+          )}
         </span>
         <span className="shrink-0 text-right">
           <span className="block text-xs text-slate-500">Últ. revisión</span>
