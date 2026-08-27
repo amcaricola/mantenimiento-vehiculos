@@ -6,11 +6,25 @@ import { DB_VERSION } from './json-db.repository.js'
 
 // Cada escritura usa una URL única (addRandomSuffix) para evitar por completo
 // la caché del CDN y la invalidación por sobrescritura del mismo pathname.
+// El prefijo de listado es "db.json" (sin guion) para detectar también el blob
+// legado con URL fija ("db.json") de despliegues anteriores y así NUNCA perder
+// datos existentes: si hay datos, se conservan y se continúa sobre ellos.
 const DB_PATHNAME = 'db.json'
-const DB_PREFIX = 'db.json-'
+const DB_PREFIX = 'db.json'
+
+// Caché en memoria por instancia: evita golpear el blob en cada request.
+// Con un TTL de 1s las lecturas repetidas son instantáneas y el dato reflejado
+// tiene como máximo 1s de antigüedad ("actualizado hace segundos" se ve en <1s).
+const CACHE_TTL_MS = 1000
+
+interface CacheEntry {
+  data: DatabaseSchema
+  at: number
+}
 
 export class VercelBlobRepository implements Storage {
   private url: string | null = null
+  private cache: CacheEntry | null = null
 
   private async ensure(): Promise<void> {
     if (this.url) return
@@ -27,6 +41,9 @@ export class VercelBlobRepository implements Storage {
   }
 
   private async read(): Promise<DatabaseSchema> {
+    if (this.cache && Date.now() - this.cache.at < CACHE_TTL_MS) {
+      return this.cache.data
+    }
     await this.ensure()
     if (!this.url) {
       throw new Error('No se pudo inicializar la base de datos en Vercel Blob')
@@ -45,7 +62,9 @@ export class VercelBlobRepository implements Storage {
     if (!res.ok) {
       throw new Error(`Error al leer la base de datos remota (${res.status})`)
     }
-    return (await res.json()) as DatabaseSchema
+    const data = (await res.json()) as DatabaseSchema
+    this.cache = { data, at: Date.now() }
+    return data
   }
 
   private async write(data: DatabaseSchema): Promise<void> {
@@ -57,6 +76,7 @@ export class VercelBlobRepository implements Storage {
       cacheControlMaxAge: 0,
     })
     this.url = res.url
+    this.cache = { data, at: Date.now() }
     if (previousUrl && previousUrl !== res.url) {
       try {
         await del(previousUrl)
