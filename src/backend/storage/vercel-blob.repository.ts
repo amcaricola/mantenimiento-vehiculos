@@ -27,13 +27,17 @@ export class VercelBlobRepository implements Storage {
   private cache: CacheEntry | null = null
 
   private async ensure(): Promise<void> {
-    if (this.url || this.empty) return
+    // Solo una URL concreta evita volver a listar. El estado "empty" NO es
+    // permanente: se re-listará en cada lectura (tras expirar la caché) para
+    // rediscover datos creados por otra instancia o que aparezcan más tarde.
+    if (this.url) return
     const { blobs } = await list({ prefix: DB_PREFIX, limit: 20 })
     if (blobs.length > 0) {
       const latest = [...blobs].sort(
         (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
       )[0]
       this.url = latest.url
+      this.empty = false
       return
     }
     // Sin base de datos previa: se trabaja con una DB limpia en memoria.

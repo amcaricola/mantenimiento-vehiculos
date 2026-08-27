@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'preact/hooks'
 import type { Vehiculo, VehiculoConEstado } from '../../../shared/types.js'
 import { getDiasRestantes, getRevisionStatus } from '../../../shared/dates.js'
-import { api } from '../services/api.js'
+import { api, UnauthorizedError } from '../services/api.js'
 
 function toVehiculoConEstado(v: Vehiculo): VehiculoConEstado {
   return {
@@ -29,7 +29,11 @@ export function useVehicles(token: string | null) {
       setVehicles(data)
       setError(null)
     } catch (e) {
-      setError('Error al cargar datos. Verifica la conexión e intenta nuevamente.')
+      if (e instanceof UnauthorizedError) {
+        setError('Sesión expirada. Inicia sesión nuevamente.')
+      } else {
+        setError('Error al cargar datos. Verifica la conexión e intenta nuevamente.')
+      }
     } finally {
       setLoading(false)
     }
