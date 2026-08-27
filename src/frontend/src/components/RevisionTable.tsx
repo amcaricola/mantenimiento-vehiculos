@@ -5,7 +5,11 @@ import { StatusBadge } from './StatusBadge.js'
 
 interface Props {
   revisiones: RevisionConEstado[]
-  onViewImage: (url: string, nombre: string) => void
+  onViewImage: (url: string | null, nombre: string) => void
+}
+
+function hasPhoto(rev: RevisionConEstado): boolean {
+  return Boolean(rev.imagenRespaldoUrl) || Boolean(rev.tieneImagen)
 }
 
 function PhotoIcon({ hasPhoto }: { hasPhoto: boolean }) {
@@ -27,25 +31,24 @@ function PhotoIcon({ hasPhoto }: { hasPhoto: boolean }) {
 }
 
 function PhotoButton({ rev, onViewImage }: { rev: RevisionConEstado; onViewImage: Props['onViewImage'] }) {
+  const photo = hasPhoto(rev)
   return (
     <button
       type="button"
       aria-label={
-        rev.imagenRespaldoUrl
+        photo
           ? `Ver foto de ${rev.nombre}`
           : `Sin foto de ${rev.nombre}`
       }
-      disabled={!rev.imagenRespaldoUrl}
-      onClick={() =>
-        rev.imagenRespaldoUrl && onViewImage(rev.imagenRespaldoUrl, rev.nombre)
-      }
+      disabled={!photo}
+      onClick={() => photo && onViewImage(rev.imagenRespaldoUrl ?? null, rev.nombre)}
       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-        rev.imagenRespaldoUrl
+        photo
           ? 'text-brand-600 hover:bg-slate-100 active:bg-slate-200'
           : 'cursor-not-allowed text-slate-400'
       }`}
     >
-      <PhotoIcon hasPhoto={Boolean(rev.imagenRespaldoUrl)} />
+      <PhotoIcon hasPhoto={photo} />
     </button>
   )
 }

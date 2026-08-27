@@ -3,7 +3,6 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { JsonDbRepository } from '../../src/backend/storage/json-db.repository'
-import { seedVehiculos } from '../../src/backend/storage/seed'
 import type { Vehiculo } from '../../src/shared/types'
 
 let tmpDir: string
@@ -30,11 +29,11 @@ beforeEach(async () => {
 })
 
 describe('JsonDbRepository', () => {
-  it('crea el archivo con datos semilla si no existe', async () => {
+  it('crea el archivo con una base limpia si no existe', async () => {
     const content = await fs.readFile(path.join(tmpDir, 'data', 'db.json'), 'utf-8')
     const db = JSON.parse(content) as { version: number; vehiculos: Vehiculo[] }
     expect(db.version).toBe(1)
-    expect(db.vehiculos.length).toBe(seedVehiculos().length)
+    expect(db.vehiculos.length).toBe(0)
   })
 
   it('crea y recupera un vehículo', async () => {
@@ -42,7 +41,7 @@ describe('JsonDbRepository', () => {
     await repo.create(vehiculo)
     const found = await repo.findById(vehiculo.id)
     expect(found).toEqual(vehiculo)
-    expect((await repo.findAll()).length).toBe(seedVehiculos().length + 1)
+    expect((await repo.findAll()).length).toBe(1)
   })
 
   it('actualiza un vehículo existente', async () => {

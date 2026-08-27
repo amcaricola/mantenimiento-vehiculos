@@ -20,7 +20,7 @@ const GLOBAL_STATUS: Record<RevisionStatus, { label: string; badge: string; dot:
 
 export function VehicleCard({ vehiculo, admin = false, onEdit, onDelete }: Props) {
   const [expanded, setExpanded] = useState(false)
-  const [preview, setPreview] = useState<{ url: string; nombre: string } | null>(null)
+  const [preview, setPreview] = useState<{ url: string | null; nombre: string } | null>(null)
 
   const worstStatus =
     vehiculo.revisiones

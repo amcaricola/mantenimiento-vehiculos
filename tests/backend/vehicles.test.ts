@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createTestApp, login, bearer, type TestApp } from '../helpers'
 import type { Vehiculo } from '../../src/shared/types'
+import { seedVehiculos } from '../../src/backend/storage/seed'
 
 const instances: TestApp[] = []
 
@@ -10,6 +11,12 @@ async function setup() {
   const instance = await createTestApp()
   instances.push(instance)
   return instance
+}
+
+async function seedInstance(instance: TestApp) {
+  for (const vehiculo of seedVehiculos()) {
+    await instance.repository.create(vehiculo)
+  }
 }
 
 afterEach(async () => {
@@ -41,7 +48,9 @@ const validPayload = {
 
 describe('API de vehículos', () => {
   it('expone el listado públicamente con estados calculados', async () => {
-    const { app } = await setup()
+    const instance = await setup()
+    await seedInstance(instance)
+    const { app } = instance
     const res = await app.request('/api/vehicles')
     expect(res.status).toBe(200)
     const body = (await res.json()) as Vehiculo[]
@@ -57,13 +66,55 @@ describe('API de vehículos', () => {
   })
 
   it('obtiene detalle por id (público)', async () => {
-    const { app } = await setup()
+    const instance = await setup()
+    await seedInstance(instance)
+    const { app } = instance
     const listRes = await app.request('/api/vehicles')
     const list = (await listRes.json()) as Vehiculo[]
     const res = await app.request(`/api/vehicles/${list[0].id}`)
     expect(res.status).toBe(200)
     const body = (await res.json()) as Vehiculo
     expect(body.id).toBe(list[0].id)
+  })
+
+  it('oculta las URLs de los respaldos en modo público', async () => {
+    const instance = await setup()
+    await seedInstance(instance)
+    const { app } = instance
+    const token = await login(app)
+
+    const authedList = (await (
+      await app.request('/api/vehicles', { headers: bearer(token) })
+    ).json()) as Vehiculo[]
+    const vehicleId = authedList[0].id
+    const revisionId = authedList[0].revisiones[0].id
+
+    const form = new FormData()
+    form.append(
+      'image',
+      new File([new TextEncoder().encode('fake-jpeg-content')], 'respaldo.jpg', {
+        type: 'image/jpeg',
+      }),
+    )
+    const up = await app.request(
+      `/api/vehicles/${vehicleId}/revision/${revisionId}/image`,
+      { method: 'POST', headers: bearer(token), body: form },
+    )
+    expect(up.status).toBe(201)
+
+    const pub = (await (
+      await app.request('/api/vehicles')
+    ).json()) as Vehiculo[]
+    const pubRev = pub[0].revisiones[0] as Vehiculo['revisiones'][number] & {
+      tieneImagen?: boolean
+    }
+    expect(pubRev.imagenRespaldoUrl).toBeNull()
+    expect(pubRev.tieneImagen).toBe(true)
+
+    const authed = (await (
+      await app.request('/api/vehicles', { headers: bearer(token) })
+    ).json()) as Vehiculo[]
+    expect(authed[0].revisiones[0].imagenRespaldoUrl).toBeTruthy()
   })
 
   it('devuelve 404 para un id inexistente', async () => {
@@ -190,7 +241,9 @@ describe('API de vehículos', () => {
   })
 
   it('rechaza subir una imagen sin token', async () => {
-    const { app } = await setup()
+    const instance = await setup()
+    await seedInstance(instance)
+    const { app } = instance
     const listRes = await app.request('/api/vehicles')
     const list = (await listRes.json()) as Vehiculo[]
     const form = new FormData()
@@ -203,7 +256,9 @@ describe('API de vehículos', () => {
   })
 
   it('rechaza subir un archivo que no es imagen', async () => {
-    const { app } = await setup()
+    const instance = await setup()
+    await seedInstance(instance)
+    const { app } = instance
     const token = await login(app)
     const listRes = await app.request('/api/vehicles')
     const list = (await listRes.json()) as Vehiculo[]
@@ -224,7 +279,9 @@ describe('API de vehículos', () => {
     })
 
     it('exporta los vehículos con token', async () => {
-      const { app } = await setup()
+      const instance = await setup()
+      await seedInstance(instance)
+      const { app } = instance
       const token = await login(app)
       const res = await app.request('/api/vehicles/export', { headers: bearer(token) })
       expect(res.status).toBe(200)
@@ -238,7 +295,9 @@ describe('API de vehículos', () => {
     })
 
     it('importa datos y reemplaza la lista', async () => {
-      const { app } = await setup()
+      const instance = await setup()
+      await seedInstance(instance)
+      const { app } = instance
       const token = await login(app)
 
       const exportRes = await app.request('/api/vehicles/export', {

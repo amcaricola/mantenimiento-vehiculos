@@ -6,7 +6,6 @@ import { loadEnv } from './config/env.js'
 import type { Storage } from './storage/storage.interface.js'
 import { JsonDbRepository } from './storage/json-db.repository.js'
 import { VercelBlobRepository } from './storage/vercel-blob.repository.js'
-import { InMemoryRepository } from './storage/in-memory.repository.js'
 import { createAuthService } from './modules/auth/auth.service.js'
 import { getJwtExpirationSeconds } from './config/env.js'
 import { createAuthController } from './modules/auth/auth.controller.js'
@@ -50,16 +49,17 @@ export function createApp(env: Env = loadEnv(), deps: AppDeps = {}): AppBundle {
 
   if (runningOnVercel && !blobConfigured) {
     console.warn(
-      '[app] Vercel sin BLOB_READ_WRITE_TOKEN: usando almacenamiento en memoria (sin persistencia). Conecta un Vercel Blob Store en Storage > Blob.',
+      '[app] Vercel sin Vercel Blob configurado: la base de datos no estará disponible hasta conectar un Blob Store en Storage > Blob.',
     )
   }
 
+  // En Vercel la persistencia es SIEMPRE el blob (única fuente de datos). Si el
+  // blob no está configurado, las operaciones fallarán y el frontend mostrará
+  // "Error al cargar datos" en lugar de usar una base de datos en memoria.
   const repository =
     deps.repository ??
     (runningOnVercel
-      ? blobConfigured
-        ? new VercelBlobRepository()
-        : new InMemoryRepository()
+      ? new VercelBlobRepository()
       : new JsonDbRepository(path.join(env.DATA_DIR, 'db.json')))
 
   const uploadService =
@@ -89,6 +89,9 @@ export function createApp(env: Env = loadEnv(), deps: AppDeps = {}): AppBundle {
   app.onError(errorHandler)
 
   app.get('/api/health', (c) => c.json({ status: 'ok', version: 1 }))
+
+  // Evita que buscadores indexen la aplicación y los respaldos de documentos.
+  app.get('/robots.txt', (c) => c.text('User-agent: *\nDisallow: /\n'))
 
   app.route('/api/auth', createAuthController())
   app.route('/api/vehicles', createVehicleController())

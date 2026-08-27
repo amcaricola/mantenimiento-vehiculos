@@ -1,7 +1,6 @@
 import { list, put, del } from '@vercel/blob'
 import type { DatabaseSchema, Vehiculo } from '../../shared/types.js'
 import type { Storage } from './storage.interface.js'
-import { seedVehiculos } from './seed.js'
 import { DB_VERSION } from './json-db.repository.js'
 
 // Cada escritura usa una URL única (addRandomSuffix) para evitar por completo
@@ -24,10 +23,11 @@ interface CacheEntry {
 
 export class VercelBlobRepository implements Storage {
   private url: string | null = null
+  private empty = false
   private cache: CacheEntry | null = null
 
   private async ensure(): Promise<void> {
-    if (this.url) return
+    if (this.url || this.empty) return
     const { blobs } = await list({ prefix: DB_PREFIX, limit: 20 })
     if (blobs.length > 0) {
       const latest = [...blobs].sort(
@@ -36,8 +36,10 @@ export class VercelBlobRepository implements Storage {
       this.url = latest.url
       return
     }
-    const data: DatabaseSchema = { version: DB_VERSION, vehiculos: seedVehiculos() }
-    await this.write(data)
+    // Sin base de datos previa: se trabaja con una DB limpia en memoria.
+    // NO se persiste nada vacío hasta que el usuario guarde un cambio real,
+    // para no crear un blob que pudiera ocultar datos legítimos.
+    this.empty = true
   }
 
   private async read(): Promise<DatabaseSchema> {
@@ -45,6 +47,11 @@ export class VercelBlobRepository implements Storage {
       return this.cache.data
     }
     await this.ensure()
+    if (this.empty) {
+      const data: DatabaseSchema = { version: DB_VERSION, vehiculos: [] }
+      this.cache = { data, at: Date.now() }
+      return data
+    }
     if (!this.url) {
       throw new Error('No se pudo inicializar la base de datos en Vercel Blob')
     }
@@ -54,6 +61,11 @@ export class VercelBlobRepository implements Storage {
       // se relista el blob más reciente y se reintenta una vez.
       this.url = null
       await this.ensure()
+      if (this.empty) {
+        const data: DatabaseSchema = { version: DB_VERSION, vehiculos: [] }
+        this.cache = { data, at: Date.now() }
+        return data
+      }
       if (!this.url) {
         throw new Error('No se pudo inicializar la base de datos en Vercel Blob')
       }
@@ -76,6 +88,7 @@ export class VercelBlobRepository implements Storage {
       cacheControlMaxAge: 0,
     })
     this.url = res.url
+    this.empty = false
     this.cache = { data, at: Date.now() }
     if (previousUrl && previousUrl !== res.url) {
       try {

@@ -29,7 +29,7 @@ export function useVehicles(token: string | null) {
       setVehicles(data)
       setError(null)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar vehículos')
+      setError('Error al cargar datos. Verifica la conexión e intenta nuevamente.')
     } finally {
       setLoading(false)
     }

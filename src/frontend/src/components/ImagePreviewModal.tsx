@@ -1,7 +1,7 @@
 import { useEffect } from 'preact/hooks'
 
 interface Props {
-  url: string
+  url: string | null
   nombre: string
   onClose: () => void
 }
@@ -34,21 +34,29 @@ export function ImagePreviewModal({ url, nombre, onClose }: Props) {
         </button>
       </div>
       <div className="flex flex-1 items-center justify-center overflow-auto p-3">
-        <img
-          src={url}
-          alt={`Respaldo de ${nombre}`}
-          className="max-h-full max-w-full rounded-lg object-contain"
-          draggable={false}
-        />
+        {url ? (
+          <img
+            src={url}
+            alt={`Respaldo de ${nombre}`}
+            className="max-h-full max-w-full rounded-lg object-contain"
+            draggable={false}
+          />
+        ) : (
+          <div className="flex max-w-xs flex-col items-center gap-3 text-center">
+            <span className="text-4xl" aria-hidden="true">🔒</span>
+            <p className="text-sm text-white">
+              Para ver el respaldo de este documento, inicia sesión con la clave
+              maestra.
+            </p>
+          </div>
+        )}
       </div>
       <div className="flex justify-center gap-3 p-4">
-        <a
-          href={url}
-          download
-          className="btn-primary"
-        >
-          Descargar
-        </a>
+        {url && (
+          <a href={url} download className="btn-primary">
+            Descargar
+          </a>
+        )}
         <button type="button" className="btn-outline !text-white !border-white/40 !bg-transparent" onClick={onClose}>
           Cerrar
         </button>

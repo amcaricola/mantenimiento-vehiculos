@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { createApp } from '../src/backend/app'
 import type { Env } from '../src/backend/config/env'
+import type { Storage } from '../src/backend/storage/storage.interface'
 
 export const TEST_MASTER_KEY = 'test-master-key'
 
@@ -10,6 +11,7 @@ export interface TestApp {
   app: Awaited<ReturnType<typeof createApp>>['app']
   env: Env
   tmpDir: string
+  repository: Storage
 }
 
 export async function createTestApp(): Promise<TestApp> {
@@ -23,8 +25,8 @@ export async function createTestApp(): Promise<TestApp> {
     UPLOADS_DIR: path.join(tmpDir, 'uploads'),
     PUBLIC_DIR: path.join(tmpDir, 'dist'),
   }
-  const { app } = await createApp(env)
-  return { app, env, tmpDir }
+  const { app, repository } = await createApp(env)
+  return { app, env, tmpDir, repository }
 }
 
 export async function login(app: TestApp['app'], key = TEST_MASTER_KEY): Promise<string> {

@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
+import type { Context } from 'hono'
 import type { z } from 'zod'
 import type { AppContext } from '../../app.types.js'
+import type { VehiculoConEstado } from '../../../shared/types.js'
 import { DB_VERSION } from '../../storage/json-db.repository.js'
 import { ApiError } from '../../middleware/error.middleware.js'
 import { authMiddleware } from '../../middleware/auth.middleware.js'
@@ -21,12 +23,34 @@ function parseBodyOrThrow<S extends z.ZodTypeAny>(schema: S, data: unknown): z.o
   return result.data
 }
 
+// Verifica si la petición trae un token válido. En modo público (sin sesión)
+// las URLs de los respaldos NO se exponen; solo se indica si existe la foto.
+async function hasValidToken(c: Context<AppContext>): Promise<boolean> {
+  const header = c.req.header('Authorization')
+  if (!header?.startsWith('Bearer ')) return false
+  const authService = c.get('authService')
+  return authService.verifyToken(header.slice('Bearer '.length))
+}
+
+function maskVehiculo(v: VehiculoConEstado): VehiculoConEstado {
+  return {
+    ...v,
+    revisiones: v.revisiones.map((r) => ({
+      ...r,
+      imagenRespaldoUrl: null,
+      tieneImagen: Boolean(r.imagenRespaldoUrl),
+    })),
+  }
+}
+
 export function createVehicleController() {
   const app = new Hono<AppContext>()
 
   app.get('/', async (c) => {
     const service = c.get('vehicleService')
-    return c.json(await service.list())
+    const vehiculos = await service.list()
+    if (await hasValidToken(c)) return c.json(vehiculos)
+    return c.json(vehiculos.map(maskVehiculo))
   })
 
   app.get('/export', authMiddleware(), async (c) => {
@@ -53,7 +77,8 @@ export function createVehicleController() {
     if (!vehiculo) {
       throw new ApiError(404, 'Vehículo no encontrado')
     }
-    return c.json(vehiculo)
+    if (await hasValidToken(c)) return c.json(vehiculo)
+    return c.json(maskVehiculo(vehiculo))
   })
 
   app.post('/', authMiddleware(), async (c) => {

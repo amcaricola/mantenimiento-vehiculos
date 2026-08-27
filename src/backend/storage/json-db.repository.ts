@@ -2,7 +2,6 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { DatabaseSchema, Vehiculo } from '../../shared/types.js'
 import type { Storage } from './storage.interface.js'
-import { seedVehiculos } from './seed.js'
 
 export const DB_VERSION = 1
 
@@ -27,7 +26,7 @@ export class JsonDbRepository implements Storage {
     try {
       await fs.access(this.filePath)
     } catch {
-      await this.writeRaw({ version: DB_VERSION, vehiculos: seedVehiculos() })
+      await this.writeRaw({ version: DB_VERSION, vehiculos: [] })
     }
   }
 

@@ -53,6 +53,9 @@ export type RevisionStatus = 'vencido' | 'proximo' | 'al_dia' | 'sin_fecha'
 export interface RevisionConEstado extends ItemRevision {
   diasRestantes: number | null
   estado: RevisionStatus
+  // Indica si existe respaldo fotográfico. En el modo público el URL real se
+  // oculta (imagenRespaldoUrl = null) y solo se expone este flag.
+  tieneImagen?: boolean
 }
 
 export interface VehiculoConEstado extends Vehiculo {
