@@ -5,11 +5,16 @@ import { DB_VERSION } from './json-db.repository.js'
 
 // Cada escritura usa una URL única (addRandomSuffix) para evitar por completo
 // la caché del CDN y la invalidación por sobrescritura del mismo pathname.
-// El prefijo de listado es "db.json" (sin guion) para detectar también el blob
-// legado con URL fija ("db.json") de despliegues anteriores y así NUNCA perder
-// datos existentes: si hay datos, se conservan y se continúa sobre ellos.
+// OJO: addRandomSuffix inserta el sufijo ANTES de la extensión, por lo que
+// "db.json" se convierte en "db-<aleatorio>.json" (NO "db.json-<aleatorio>").
+// Por eso el prefijo de listado debe ser "db": detecta tanto el blob legado
+// "db.json" como los generados "db-<aleatorio>.json". Un prefijo "db.json" NO
+// encuentra los blobs reales y hace que una instancia nueva vea la DB vacía.
 const DB_PATHNAME = 'db.json'
-const DB_PREFIX = 'db.json'
+const DB_PREFIX = 'db'
+const DB_LIST_LIMIT = 1000
+const KEEP_LAST_BLOBS = 2
+const DB_BLOB_PATTERN = /^db(?:-[^/]+)?\.json$/
 
 // Caché en memoria por instancia: evita golpear el blob en cada request.
 // Con un TTL de 1s las lecturas repetidas son instantáneas y el dato reflejado
@@ -31,9 +36,10 @@ export class VercelBlobRepository implements Storage {
     // permanente: se re-listará en cada lectura (tras expirar la caché) para
     // rediscover datos creados por otra instancia o que aparezcan más tarde.
     if (this.url) return
-    const { blobs } = await list({ prefix: DB_PREFIX, limit: 20 })
-    if (blobs.length > 0) {
-      const latest = [...blobs].sort(
+    const { blobs } = await list({ prefix: DB_PREFIX, limit: DB_LIST_LIMIT })
+    const databaseBlobs = blobs.filter((blob) => DB_BLOB_PATTERN.test(blob.pathname))
+    if (databaseBlobs.length > 0) {
+      const latest = [...databaseBlobs].sort(
         (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
       )[0]
       this.url = latest.url
@@ -84,22 +90,39 @@ export class VercelBlobRepository implements Storage {
   }
 
   private async write(data: DatabaseSchema): Promise<void> {
-    const previousUrl = this.url
     const res = await put(DB_PATHNAME, JSON.stringify(data), {
       access: 'public',
       addRandomSuffix: true,
       contentType: 'application/json',
-      cacheControlMaxAge: 0,
+      cacheControlMaxAge: 60,
     })
     this.url = res.url
     this.empty = false
     this.cache = { data, at: Date.now() }
-    if (previousUrl && previousUrl !== res.url) {
-      try {
-        await del(previousUrl)
-      } catch {
-        // Otra instancia ya pudo eliminarlo
+    await this.prune()
+  }
+
+  // Conserva solo los últimos blobs de la base (los más recientes) para evitar
+  // acumulación. Nunca borra el recién escrito ni el inmediatamente anterior
+  // (así una instancia con una URL ligeramente vieja aún puede leerlos).
+  private async prune(): Promise<void> {
+    try {
+      const { blobs } = await list({ prefix: DB_PREFIX, limit: DB_LIST_LIMIT })
+      const databaseBlobs = blobs.filter((blob) => DB_BLOB_PATTERN.test(blob.pathname))
+      const sorted = [...databaseBlobs].sort(
+        (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
+      )
+      for (const b of sorted.slice(KEEP_LAST_BLOBS)) {
+        if (b.url !== this.url) {
+          try {
+            await del(b.url)
+          } catch {
+            // otra instancia ya pudo eliminarlo
+          }
+        }
       }
+    } catch {
+      // el pruning no debe interrumpir la escritura
     }
   }
 

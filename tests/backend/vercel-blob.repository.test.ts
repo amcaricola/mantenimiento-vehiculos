@@ -37,7 +37,8 @@ function mockBlobList(url: string): unknown {
     blobs: [
       {
         url,
-        pathname: 'db.json-abc',
+        // addRandomSuffix genera "db-<aleatorio>.json" (sufijo antes de la extensión)
+        pathname: 'db-abc.json',
         uploadedAt: new Date().toISOString(),
         size: 100,
         contentType: 'application/json',
@@ -59,6 +60,28 @@ describe('VercelBlobRepository', () => {
     vi.unstubAllGlobals()
   })
 
+  it('usa el prefijo "db" y encuentra blobs con sufijo aleatorio (db-xxx.json)', async () => {
+    const data = makeData()
+    mockedList.mockResolvedValue(
+      mockBlobList('https://blob.example.com/db-abc.json') as never,
+    )
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => data,
+    } as never)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const repo = new VercelBlobRepository()
+    expect(await repo.findAll()).toHaveLength(1)
+    expect(await repo.findAll()).toHaveLength(1)
+    // El prefijo de listado debe ser "db" para detectar "db-<aleatorio>.json".
+    // Si se usara "db.json" este test fallaría (regresión del bug de datos vacíos).
+    expect(mockedList).toHaveBeenCalledWith(
+      expect.objectContaining({ prefix: 'db' }),
+    )
+  })
+
   it('redescubre datos creados por otra instancia tras estar vacío', async () => {
     // 1) El blob no tiene datos todavía
     mockedList.mockResolvedValue({ blobs: [], hasMore: false, cursor: undefined } as never)
@@ -70,7 +93,7 @@ describe('VercelBlobRepository', () => {
 
     // 2) Otra instancia escribe: ahora existe un blob con datos
     const data = makeData()
-    mockedList.mockResolvedValue(mockBlobList('https://blob.example.com/db.json-abc') as never)
+    mockedList.mockResolvedValue(mockBlobList('https://blob.example.com/db-abc.json') as never)
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
@@ -83,5 +106,34 @@ describe('VercelBlobRepository', () => {
     const second = await repo.findAll()
     expect(second).toHaveLength(1)
     expect(second[0].patente).toBe('AAAA-11')
+  })
+
+  it('detecta el blob legado con pathname fijo', async () => {
+    const data = makeData()
+    mockedList.mockResolvedValue({
+      blobs: [
+        {
+          url: 'https://blob.example.com/db.json',
+          pathname: 'db.json',
+          uploadedAt: new Date().toISOString(),
+          size: 100,
+          etag: 'etag',
+        },
+      ],
+      hasMore: false,
+      cursor: undefined,
+    } as never)
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => data,
+    } as never)
+    vi.stubGlobal('fetch', fetchMock)
+
+    const repo = new VercelBlobRepository()
+    const result = await repo.findAll()
+
+    expect(result).toHaveLength(1)
+    expect(fetchMock).toHaveBeenCalledWith('https://blob.example.com/db.json')
   })
 })
